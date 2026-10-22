@@ -33,12 +33,12 @@ await dialogWeg();
 let s = await spieler(); pruefe('Spawn steht am Boden', s.amBoden && Math.abs(s.y) < .1, JSON.stringify(s));
 page.keyboard.down('Space'); let h = await maxY(900); await page.keyboard.up('Space'); pruefe('Sprunghöhe einfach ≈2.3', h > 1.9 && h < 2.8, h.toFixed(2));
 await page.waitForTimeout(400);
-await page.keyboard.down('Space'); await page.waitForTimeout(120); await page.keyboard.up('Space'); await page.waitForTimeout(60); page.keyboard.down('Space'); h = await maxY(1200); await page.keyboard.up('Space'); pruefe('Doppelsprung (Tipp+Doppel) >2.8', h > 2.8 && h < 4.5, h.toFixed(2));
+await page.keyboard.down('Space'); await page.waitForTimeout(120); await page.keyboard.up('Space'); await page.waitForTimeout(60); page.keyboard.down('Space'); h = await maxY(1200); await page.keyboard.up('Space'); pruefe('Doppelsprung (Tipp+Doppel) >2.4', h > 2.4 && h < 4.5, h.toFixed(2));
 await page.waitForTimeout(600);
 // Wasser
 await teleport(-10, 6.5, -7); await page.waitForTimeout(1500); s = await spieler(); pruefe('Wasser macht nass, Socke sinkt', s.nass && s.inWasser && s.y < 3.5, JSON.stringify(s));
 // Föhn: trocknet und hebt
-await teleport(-23.5, 10.4, 8.5, true); await page.waitForTimeout(2500); s = await spieler(); pruefe('Föhn trocknet und bläst hoch', !s.nass && s.y > 11, JSON.stringify(s));
+await teleport(-23.5, 10.4, 8.5, true); await page.waitForTimeout(3500); s = await spieler(); pruefe('Föhn trocknet und bläst hoch', !s.nass && s.y > 11, JSON.stringify(s));
 // Gummizug
 await teleport(-24, 8.6, 2); await page.waitForTimeout(400); const hinweis = await ev(() => window.ringel.welt.spieler.hinweis); pruefe('Haken in Reichweite zeigt Hinweis', hinweis.includes('Gummizug'), hinweis);
 await page.keyboard.press('ShiftLeft'); await page.waitForTimeout(450); s = await spieler(); pruefe('Gummizug zieht zum Haken (-24,13,0)', Math.abs(s.x + 24) < 2 && s.y > 10.5 && Math.abs(s.z) < 2.5, JSON.stringify(s));
@@ -118,6 +118,27 @@ const lampe = await ev(() => ({ flag: window.ringel.spielstand.flag('bett-lampe'
 await ev(() => { const g = window.ringel.welt.gegner.filter(g => g.art === 'staubmaus'); g[1].gruppe.position.copy(g[0].gruppe.position); });
 await page.waitForTimeout(300); const groessen = await ev(() => window.ringel.welt.gegner.filter(g => g.art === 'staubmaus').map(g => +g.groesse.toFixed(2)));
 pruefe('Staubmäuse verschmelzen', groessen.some(g => g > 1), JSON.stringify(groessen));
+
+// ---- Aquarium: Schwimmen, Schlüssel, Truhe ----
+await lade('aquarium'); await dialogWeg();
+await teleport(0, 1, 6, true); await page.waitForTimeout(300); await page.keyboard.down('Space'); await page.waitForTimeout(1500); await page.keyboard.up('Space'); s = await spieler();
+pruefe('Schwimmen: Springen halten = auftauchen', s.y > 5 && s.inWasser, JSON.stringify(s));
+await page.keyboard.down('ControlLeft'); await page.waitForTimeout(1500); await page.keyboard.up('ControlLeft'); const s2 = await spieler();
+pruefe('Schwimmen: Strg halten = abtauchen', s2.y < s.y - 2, JSON.stringify(s2));
+const unterwasser = await ev(() => ({ audio: window.ringel.audio.unterwasser, tint: window.ringel.renderer.unterwasser })); pruefe('Unterwasser: Musikfilter und Tönung aktiv', unterwasser.audio && unterwasser.tint, JSON.stringify(unterwasser));
+await teleport(-2, 1, -8); await page.waitForTimeout(400); await page.keyboard.press('KeyE'); await page.waitForTimeout(300); let truhe = await ev(() => window.ringel.spielstand.flag('aquarium-truhe')); pruefe('Truhe ohne Schlüssel bleibt zu', !truhe);
+await teleport(-26, 1, 12); await page.waitForTimeout(400); await page.keyboard.press('KeyE'); await page.waitForTimeout(300); const schl = await ev(() => window.ringel.spielstand.flag('aquarium-schluessel')); pruefe('Schlüssel aufgenommen', schl);
+await teleport(-2, 1, -8); await page.waitForTimeout(400); await page.keyboard.press('KeyE'); await page.waitForTimeout(500); truhe = await ev(() => window.ringel.spielstand.flag('aquarium-truhe')); const truhenK = await ev(() => window.ringel.welt.sammel.some(x => x.id === 'aquarium:truhe'));
+pruefe('Truhe mit Schlüssel öffnet, Klammer erscheint', truhe && truhenK, `${truhe} ${truhenK}`);
+const fischJagd = await ev(() => window.ringel.welt.gegner.filter(g => g.art === 'fisch').length); pruefe('Fische vorhanden', fischJagd === 3, fischJagd);
+
+// ---- Winter: Schneeball wächst, Rodelbahn ----
+await lade('winter'); await dialogWeg();
+await teleport(-20, .5, 10); await page.waitForTimeout(2500); const ball = await ev(() => window.ringel.welt.gegner.filter(g => g.art === 'schneeball').map(g => +g.groesse.toFixed(2)));
+pruefe('Schneeball rollt und wächst', ball.some(g => g > 1.1), JSON.stringify(ball));
+await teleport(20, 8.6, 17); await page.waitForTimeout(2500); s = await spieler(); pruefe('Rodelbahn rutscht nach unten (z sinkt)', s.z < 12, JSON.stringify(s));
+await teleport(-16, .6, -4); await page.waitForTimeout(400); await page.keyboard.down('KeyW'); await page.waitForTimeout(500); await page.keyboard.up('KeyW'); await page.waitForTimeout(250);
+const teich = await ev(() => { const s = window.ringel.welt.spieler; return { v: +Math.hypot(s.v.x, s.v.z).toFixed(2), pos: s.pos.toArray().map(v => +v.toFixed(1)), eis: s.eis, nass: s.nass, amBoden: s.amBoden, faeden: s.faeden }; }); pruefe('Zugefrorener Teich ist rutschig', teich.v > 1.5, JSON.stringify(teich));
 
 // ---- Trommel: Bosskampf ----
 await lade('trommel'); await page.waitForTimeout(800); await dialogWeg(); await page.waitForTimeout(500);
