@@ -1,0 +1,174 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Ringel 64</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+  /* Ein einziges, bewusst dunkles Thema: N64-Keller-Optik */
+  :root {
+    color-scheme: dark;
+    --tinte: #fff6e5;
+    --schatten: #2a1a2e;
+    --rot: #e8474c;
+    --gold: #ffd25a;
+    --blau: #5fb7e8;
+    --panel: rgba(32, 20, 44, 0.86);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #10111a; overflow: hidden;
+    font-family: 'Press Start 2P', 'Courier New', monospace; color: var(--tinte); }
+  body { user-select: none; -webkit-user-select: none; touch-action: none; }
+  #spiel { position: fixed; inset: 0; width: 100%; height: 100%; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges; cursor: crosshair; }
+
+  .ebene { position: fixed; inset: 0; pointer-events: none; }
+  .text { text-shadow: 3px 3px 0 var(--schatten); }
+
+  /* HUD */
+  #hud { padding: 18px; font-size: 13px; line-height: 1.6; display: none; }
+  #hud .zeile { display: flex; gap: 10px; align-items: center; margin-bottom: 4px; }
+  #hud .symbol { width: 22px; height: 22px; display: inline-block; }
+  #hud .faeden { display: flex; gap: 4px; }
+  #hud .faden { width: 18px; height: 18px; background: var(--rot); border: 3px solid var(--schatten);
+    border-radius: 50% 50% 50% 0; transform: rotate(-45deg); }
+  #hud .faden.leer { background: #4a3a52; }
+  #hud .zustand { position: absolute; right: 18px; top: 18px; text-align: right; }
+  #hud .zustand .nass { color: var(--blau); }
+  #hud .zustand .trocken { color: var(--gold); }
+  #levelname { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); font-size: 11px; opacity: .85; }
+  #hinweis { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); font-size: 12px;
+    background: var(--panel); padding: 10px 14px; border: 3px solid var(--tinte); border-radius: 6px; display: none; }
+  #popups { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); text-align: center; }
+  .popup { font-size: 14px; color: var(--gold); animation: popup 1.6s forwards; }
+  @keyframes popup { 0% { opacity: 0; transform: translateY(10px) scale(.8); } 15% { opacity: 1; transform: none; }
+    80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
+
+  /* Dialog */
+  #dialog { display: none; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+    width: min(820px, 92vw); background: var(--panel); border: 4px solid var(--tinte); border-radius: 10px;
+    padding: 18px 22px; font-size: 13px; line-height: 1.8; pointer-events: none; }
+  #dialog .name { color: var(--gold); margin-bottom: 8px; font-size: 11px; }
+  #dialog .weiter { position: absolute; right: 16px; bottom: 10px; font-size: 10px; opacity: .8; animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+
+  /* Titel */
+  #titel { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    background: radial-gradient(ellipse at center, #3b2a52 0%, #15101f 70%); text-align: center; pointer-events: auto; }
+  #titel h1 { font-size: clamp(28px, 6vw, 64px); margin: 0; color: var(--rot);
+    text-shadow: 4px 4px 0 var(--tinte), 8px 8px 0 var(--schatten); letter-spacing: 2px; }
+  #titel h2 { font-size: clamp(10px, 1.8vw, 16px); margin: 0; color: var(--gold); }
+  #titel .start { font-size: 14px; animation: blink 1.2s infinite; margin-top: 10px; }
+  #titel .steuerung { font-size: 9px; line-height: 2; opacity: .85; max-width: 760px; }
+  #titel .steuerung b { color: var(--blau); }
+  #titel .knopfreihe { display: flex; gap: 14px; }
+  .knopf { pointer-events: auto; cursor: pointer; font-family: inherit; font-size: 11px; padding: 12px 18px;
+    background: var(--rot); color: var(--tinte); border: 4px solid var(--tinte); border-radius: 8px;
+    box-shadow: 4px 4px 0 var(--schatten); }
+  .knopf:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--schatten); }
+  .knopf.sekundaer { background: #4a3a62; }
+
+  /* Übergang / Ladebildschirm */
+  #uebergang { display: none; background: #15101f; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; text-align: center; padding: 20px; }
+  #uebergang .zieltitel { font-size: clamp(14px, 3vw, 26px); color: var(--gold); }
+  #uebergang .tipp { font-size: 11px; line-height: 2; max-width: 720px; opacity: .9; }
+  #uebergang .tipp::before { content: 'Flusi-Tipp: '; color: var(--blau); }
+  #uebergang .socke { width: 60px; height: 60px; background: var(--rot); border: 4px solid var(--tinte);
+    border-radius: 40% 40% 50% 50%; animation: hop .7s infinite alternate ease-in-out; }
+  @keyframes hop { from { transform: translateY(0) scaleY(1); } to { transform: translateY(-20px) scaleY(1.15); } }
+
+  /* Pause */
+  #pause { display: none; background: rgba(10, 6, 16, .8); flex-direction: column; align-items: center;
+    justify-content: center; gap: 18px; pointer-events: auto; text-align: center; }
+  #pause h2 { font-size: 22px; margin: 0 0 10px; color: var(--gold); }
+  #pause .outfits { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; max-width: 720px; }
+  #pause .outfit { padding: 10px 12px; font-size: 9px; border: 3px solid var(--tinte); border-radius: 6px;
+    background: #2d2140; cursor: pointer; pointer-events: auto; }
+  #pause .outfit.aktiv { background: var(--rot); }
+  #pause .outfit.gesperrt { opacity: .4; cursor: not-allowed; }
+  #pause .statistik { font-size: 10px; line-height: 2; opacity: .9; }
+  #pause label { font-size: 10px; display: flex; gap: 10px; align-items: center; }
+  #pause input[type=range] { width: 160px; }
+
+  /* Ende */
+  #ende { display: none; background: linear-gradient(#2d1b3d, #0f0a16); flex-direction: column; align-items: center;
+    justify-content: center; gap: 20px; text-align: center; padding: 30px; pointer-events: auto; }
+  #ende h1 { font-size: clamp(20px, 4vw, 40px); color: var(--gold); margin: 0; }
+  #ende p { font-size: 11px; line-height: 2.1; max-width: 760px; margin: 0; }
+
+  #vignette { background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45) 100%); }
+  #blende { background: #000; opacity: 0; transition: opacity .4s; }
+  #fehler { display: none; position: fixed; left: 10px; bottom: 10px; font-size: 10px; color: #f88;
+    background: rgba(0,0,0,.7); padding: 8px; max-width: 90vw; white-space: pre-wrap; z-index: 99; }
+</style>
+<canvas id="spiel"></canvas>
+<div id="vignette" class="ebene"></div>
+
+<div id="hud" class="ebene text">
+  <div class="zeile"><span class="symbol" id="sym-klammer"></span><span id="hud-klammern">0</span></div>
+  <div class="zeile"><span class="symbol" id="sym-fussel"></span><span id="hud-flusen">0</span></div>
+  <div class="zeile"><span class="symbol" id="sym-socke"></span><span id="hud-socken">0</span></div>
+  <div class="zeile"><span class="symbol" id="sym-knopf"></span><span id="hud-knoepfe">0</span></div>
+  <div class="zeile faeden" id="hud-faeden"></div>
+  <div class="zeile"><span id="hud-leben">×3</span></div>
+  <div class="zustand"><div id="hud-zustand" class="trocken">TROCKEN</div><div id="hud-levelziel" style="font-size:9px;opacity:.8;margin-top:6px"></div></div>
+  <div id="levelname"></div>
+  <div id="hinweis"></div>
+  <div id="popups"></div>
+</div>
+
+<div id="dialog" class="text">
+  <div class="name"></div>
+  <div class="inhalt"></div>
+  <div class="weiter">▼ E / Enter</div>
+</div>
+
+<div id="titel" class="ebene text">
+  <h1>RINGEL 64</h1>
+  <h2>Das Abenteuer der verlorenen Socke</h2>
+  <div class="knopfreihe">
+    <button class="knopf" id="btn-start">WEITERSPIELEN</button>
+    <button class="knopf sekundaer" id="btn-neu">NEUES SPIEL</button>
+  </div>
+  <div class="start">Enter / Gamepad A</div>
+  <div class="steuerung">
+    <b>WASD</b> laufen · <b>Pfeile / Maus ziehen / rechter Stick</b> Kamera · <b>Leertaste / A</b> springen (2× = Schleudergang)<br>
+    <b>Shift / X</b> Gummizug an Haken · <b>Strg / B</b> Stampfattacke (nur nass) · <b>Leertaste halten</b> gleiten (nur trocken)<br>
+    <b>E / Y</b> reden &amp; benutzen · <b>Esc / Start</b> Pause &amp; Outfits
+  </div>
+</div>
+
+<div id="uebergang" class="ebene text">
+  <div class="socke"></div>
+  <div class="zieltitel"></div>
+  <div class="tipp"></div>
+</div>
+
+<div id="pause" class="ebene text">
+  <h2>PAUSE</h2>
+  <div class="statistik" id="pause-statistik"></div>
+  <div style="font-size:11px;color:var(--gold)">Outfits (Knöpfe sammeln)</div>
+  <div class="outfits" id="pause-outfits"></div>
+  <label>Musik <input type="range" id="musik-laut" min="0" max="100" value="60"></label>
+  <label>Effekte <input type="range" id="sfx-laut" min="0" max="100" value="80"></label>
+  <div class="knopfreihe" style="display:flex;gap:12px">
+    <button class="knopf" id="btn-weiter">WEITER</button>
+    <button class="knopf sekundaer" id="btn-hub">ZUM WASCHKELLER</button>
+  </div>
+</div>
+
+<div id="ende" class="ebene text">
+  <h1>ENDE</h1>
+  <div id="ende-text"></div>
+  <button class="knopf" id="btn-ende-weiter">ZURÜCK IN DEN KELLER</button>
+</div>
+
+<div id="blende" class="ebene"></div>
+<div id="fehler"></div>
+
+<script>
+  window.addEventListener('error', e => { const f = document.getElementById('fehler'); f.style.display = 'block';
+    f.textContent += (e.message || e) + '\n'; });
+  window.addEventListener('unhandledrejection', e => { const f = document.getElementById('fehler'); f.style.display = 'block';
+    f.textContent += 'Promise: ' + (e.reason && e.reason.stack || e.reason) + '\n'; });
+</script>
+<script type="module" src="src/main.js"></script>
