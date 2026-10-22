@@ -21,6 +21,8 @@ export class Bauer {
       transparent: !!o.transparent, opacity: o.opacity ?? 1, seite: o.seite ?? THREE.FrontSide });
     const m = new THREE.Mesh(geo, mat);
     m.rotation.set(o.rx || 0, o.ry || 0, o.rz || 0);
+    const schatten = o.schatten ?? !(o.transparent || o.trigger || o.fest === false);
+    m.castShadow = schatten; m.receiveShadow = o.empfaengtSchatten ?? true; if (!schatten) { m.userData.keinSchatten = true; }
     (o.eltern || this.scene).add(m);
     return m;
   }
@@ -38,7 +40,8 @@ export class Bauer {
     return m;
   }
   zylinder(o) {
-    const { r = 1, h = 1, x = 0, y = 0, z = 0, seg = 12 } = o;
+    const { r = 1, h = 1, x = 0, y = 0, z = 0 } = o;
+    const seg = Math.max(o.seg ?? 12, r > 1.5 ? 24 : 16);
     const m = this._mesh(new THREE.CylinderGeometry(o.rOben ?? r, r, h, seg), o);
     m.position.set(x, y + h / 2, z);
     if (o.mitte) m.position.set(x, y, z);
@@ -50,7 +53,7 @@ export class Bauer {
   }
   kugel(o) {
     const { r = 1, x = 0, y = 0, z = 0 } = o;
-    const m = this._mesh(new THREE.SphereGeometry(r, o.seg ?? 10, o.seg ?? 8), o);
+    const m = this._mesh(new THREE.SphereGeometry(r, Math.max(o.seg ?? 10, r > 1 ? 20 : 14), Math.max(o.seg ?? 8, r > 1 ? 14 : 10)), o);
     m.position.set(x, y + (o.mitte ? 0 : r), z);
     if (o.kollision !== false) {
       const k = new Kollider(m, 'kugel', { radius: r, ...this._flags(o) });
@@ -121,14 +124,105 @@ export class Bauer {
   }
 
   // ---- Zonen ----
-  wasser({ w, h, d, x, y, z, farbe = '#4fa8e8' }) {
+  // Wasser: Trigger-Box mit animierter Oberfläche (Wellen im Vertex-Shader, driftende Textur, Glanz)
+  wasser({ w, h, d, x, y, z, farbe = '#4fa8e8', wellen = .1 }) {
     const m = this.box({ w, h, d, x, y, z, farbe, transparent: true, opacity: .55, fest: false, trigger: true, wasser: true, verlauf: .1 });
     m.userData.oberflaeche = y + h;
+    const geo = faerbe(new THREE.BoxGeometry(w, h, d, Math.max(2, Math.round(w / 2)), 1, Math.max(2, Math.round(d / 2))), farbe, { verlauf: .1, variation: 0 });
+    m.geometry.dispose(); m.geometry = geo;
+    const tex = Texturen.wasser().clone(); tex.needsUpdate = true; tex.repeat.set(w / 6, d / 6);
+    const mat = new THREE.MeshPhongMaterial({ color: 0xffffff, map: tex, vertexColors: true, transparent: true, opacity: .62, shininess: 120, specular: 0xbbccdd, depthWrite: false });
+    const zeit = { value: 0 };
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.zeit = zeit;
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float zeit;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          if (normal.y > 0.5) transformed.y += sin(position.x * 0.9 + zeit * 2.2) * ${wellen.toFixed(3)} + cos(position.z * 1.1 + zeit * 1.7) * ${wellen.toFixed(3)};`)
+        .replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\n vMapUv += vec2(zeit * 0.02, zeit * 0.013);\n#endif');
+    };
+    m.material = mat; m.castShadow = false; m.receiveShadow = true; m.userData.keinSchatten = true;
+    this.welt.dinge.push({ update: dt => { zeit.value += dt; } });
     return m;
   }
+  // Himmelskuppel mit Farbverlauf (ohne Nebel), folgt der Kamera
+  himmel({ oben = '#4f8fe8', horizont = '#cfe6ff', unten = '#8fb7e8' }) {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: { oben: { value: new THREE.Color(oben) }, horizont: { value: new THREE.Color(horizont) }, unten: { value: new THREE.Color(unten) } },
+      vertexShader: 'varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform vec3 oben, horizont, unten; varying vec3 vPos; void main(){ float h = normalize(vPos).y;
+        vec3 c = h > 0.0 ? mix(horizont, oben, pow(h, 0.6)) : mix(horizont, unten, pow(-h, 0.8)); gl_FragColor = vec4(c, 1.0); }`,
+      side: THREE.BackSide, depthWrite: false, fog: false,
+    });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(380, 24, 12), mat); m.frustumCulled = false; m.renderOrder = -10; this.scene.add(m);
+    this.welt.himmelKuppel = m; return m;
+  }
+  // Wolken: weiche Kugelhaufen, treiben langsam
+  wolken({ anzahl = 10, hoehe = 48, radius = 120, farbe = '#ffffff' }) {
+    const g = new THREE.Group(); this.scene.add(g); const z = (s) => Math.abs(Math.sin(s * 127.1) * 43758.5) % 1;
+    for (let i = 0; i < anzahl; i++) {
+      const w = new THREE.Group(); const cx = (z(i) - .5) * radius * 2, cz = (z(i + 50) - .5) * radius * 2;
+      w.position.set(cx, hoehe + z(i + 90) * 14, cz);
+      const n = 4 + Math.floor(z(i + 7) * 4);
+      for (let k = 0; k < n; k++) { const r = 3 + z(i * 9 + k) * 4;
+        const s = new THREE.Mesh(faerbe(new THREE.SphereGeometry(r, 12, 9), farbe, { verlauf: .3, variation: 0 }), material(farbe));
+        s.position.set((k - n / 2) * 3.2 + (z(k + i) - .5) * 2, (z(k * 3 + i) - .5) * 1.5, (z(k * 5 + i) - .5) * 3); s.scale.y = .55; s.userData.keinSchatten = true; w.add(s); }
+      w.userData.tempo = .4 + z(i + 3) * .6; g.add(w);
+    }
+    this.welt.dinge.push({ update: dt => { for (const w of g.children) { w.position.x += w.userData.tempo * dt; if (w.position.x > radius) w.position.x = -radius; } } });
+    return g;
+  }
+  // Grasbüschel: InstancedMesh aus gekreuzten Flächen, wiegen sich im Wind
+  gras({ x = 0, z = 0, w = 40, d = 40, anzahl = 1500, farbe = '#5fae4a', hoehe = .9, aussparung = null, y = 0 }) {
+    const halm = new THREE.PlaneGeometry(.5, hoehe, 1, 2); halm.translate(0, hoehe / 2, 0);
+    const halm2 = halm.clone().rotateY(Math.PI / 2);
+    const geo = new THREE.BufferGeometry();
+    const pos = [], nor = [], uv = [], idx = [], col = [];
+    const basis = new THREE.Color(farbe); const c = new THREE.Color();
+    for (const g of [halm, halm2]) { const off = pos.length / 3; const p = g.attributes.position, n = g.attributes.normal, u = g.attributes.uv;
+      for (let i = 0; i < p.count; i++) { pos.push(p.getX(i), p.getY(i), p.getZ(i)); nor.push(n.getX(i), n.getY(i), n.getZ(i)); uv.push(u.getX(i), u.getY(i));
+        c.copy(basis).multiplyScalar(.6 + .55 * (p.getY(i) / hoehe)); col.push(c.r, c.g, c.b); }
+      const ix = g.index.array; for (let i = 0; i < ix.length; i++) idx.push(ix[i] + off); }
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.setIndex(idx);
+    const mat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+    const zeit = { value: 0 };
+    mat.onBeforeCompile = (shader) => { shader.uniforms.zeit = zeit;
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float zeit;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          vec4 wp = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+          float s = sin(zeit * 1.6 + wp.x * .35 + wp.z * .25) * .18 * position.y;
+          transformed.x += s; transformed.z += s * .5;`); };
+    const m = new THREE.InstancedMesh(geo, mat, anzahl); m.userData.keinSchatten = true; m.receiveShadow = true;
+    const zf = (s) => Math.abs(Math.sin(s * 127.1 + 311.7) * 43758.5453) % 1;
+    const mat4 = new THREE.Matrix4(); const q = new THREE.Quaternion(); const sc = new THREE.Vector3(); const p = new THREE.Vector3();
+    let k = 0;
+    for (let i = 0; i < anzahl * 2 && k < anzahl; i++) {
+      const px = x + (zf(i) - .5) * w, pz = z + (zf(i + 1000) - .5) * d;
+      if (aussparung && px > aussparung[0] && px < aussparung[2] && pz > aussparung[1] && pz < aussparung[3]) continue;
+      p.set(px, y, pz); q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), zf(i + 2000) * Math.PI); const s = .7 + zf(i + 3000) * .7; sc.set(s, s, s);
+      mat4.compose(p, q, sc); m.setMatrixAt(k++, mat4);
+    }
+    m.count = k; m.instanceMatrix.needsUpdate = true; this.scene.add(m);
+    this.welt.dinge.push({ update: dt => { zeit.value += dt; } });
+    return m;
+  }
+  // Sonne: leuchtende Scheibe weit weg (ohne Nebel)
+  sonne({ richtung = [5, 10, 4], farbe = '#fff4c0' }) {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12), new THREE.MeshBasicMaterial({ color: farbe, fog: false }));
+    s.position.set(...richtung).normalize().multiplyScalar(340); this.scene.add(s);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ color: farbe, transparent: true, opacity: .35, fog: false })); glow.scale.set(70, 70, 1); s.add(glow);
+    return s;
+  }
   hitze({ w, h, d, x, y, z, sichtbar = false, farbe = '#ff8c3a' }) {
-    const m = this.box({ w, h, d, x, y, z, farbe, transparent: true, opacity: sichtbar ? .25 : 0, fest: false, trigger: true, hitze: true });
-    m.visible = sichtbar; return m;
+    const m = this.box({ w, h, d, x, y, z, farbe, transparent: true, opacity: 0, fest: false, trigger: true, hitze: true });
+    m.visible = false;
+    if (sichtbar) { // flache, leuchtende Bodenscheibe plus aufsteigende Wärme-Partikel
+      const s = new THREE.Mesh(new THREE.CircleGeometry(Math.min(w, d) / 2, 24), new THREE.MeshBasicMaterial({ color: farbe, transparent: true, opacity: .35, depthWrite: false }));
+      s.rotation.x = -Math.PI / 2; s.position.set(x, y + .04, z); s.userData.keinSchatten = true; this.scene.add(s);
+      let t = 0; this.welt.dinge.push({ update: dt => { s.material.opacity = .28 + Math.sin((t += dt) * 3) * .08; if (Math.random() < dt * 4)
+        this.welt.partikel.spawn(new THREE.Vector3(x + (Math.random() - .5) * w * .8, y + .2, z + (Math.random() - .5) * d * .8), { anzahl: 1, farbe: 0xffd9a0, geschwindigkeit: .8, leben: 1.2, gravitation: 1.5, groesse: .08 }); } });
+    }
+    return m;
   }
   wind({ w, h, d, x, y, z, kraft, sichtbar = false }) {
     const m = this.box({ w, h, d, x, y, z, farbe: '#ffffff', transparent: true, opacity: .12, fest: false, trigger: true, wind: new THREE.Vector3(...kraft) });

@@ -1,4 +1,4 @@
-import { Renderer } from '../engine/renderer.js';
+import { Renderer, GRAFIK_STUFEN } from '../engine/renderer.js';
 import { Eingabe } from '../engine/eingabe.js';
 import { Audio } from '../engine/audio.js';
 import { Spielstand } from './spielstand.js';
@@ -42,6 +42,11 @@ export class Spiel {
     document.getElementById('btn-weiter').addEventListener('click', () => this.pauseEnde());
     document.getElementById('btn-hub').addEventListener('click', () => { this.pauseEnde(); if (this.welt && this.welt.schluessel !== 'hub') this.ladeLevel('hub', this.welt.schluessel); });
     document.getElementById('btn-ende-weiter').addEventListener('click', () => { this.ui.ende.style.display = 'none'; this.ladeLevel('hub', 'trommel'); });
+    const g = document.getElementById('pause-grafik');
+    const NAMEN = { weich: 'Weich', hoch: 'Hoch', retro: 'Retro (N64)' };
+    const zeichneGrafik = () => { g.innerHTML = ''; for (const st of GRAFIK_STUFEN) { const el = document.createElement('div'); el.className = 'outfit' + (this.renderer.stufe === st ? ' aktiv' : ''); el.textContent = NAMEN[st];
+      el.addEventListener('click', () => { this.renderer.setzeStufe(st); zeichneGrafik(); }); g.appendChild(el); } };
+    zeichneGrafik();
     const ml = document.getElementById('musik-laut'), sl = document.getElementById('sfx-laut');
     const laut = () => { this.audio.setzeLautstaerke(ml.value / 100, sl.value / 100); try { localStorage.setItem('ringel64.laut', JSON.stringify([ml.value, sl.value])); } catch (e) {} };
     try { const l = JSON.parse(localStorage.getItem('ringel64.laut') || 'null'); if (l) { ml.value = l[0]; sl.value = l[1]; } } catch (e) {}

@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
-import { material, faerbe } from '../engine/texturen.js';
+import { material, faerbe, aktiviereSchatten } from '../engine/texturen.js';
 import { baueFigur } from './sockenmodell.js';
 import { zeigeBlase } from './npc.js';
 
@@ -17,6 +17,7 @@ class Gegner {
   mitte(out) { return out.copy(this.gruppe.position).setY(this.gruppe.position.y + this.radius); }
   update(dt) {
     if (this.tot) return;
+    if (!this.schattenGesetzt) { this.schattenGesetzt = true; aktiviereSchatten(this.gruppe); }
     this.t += dt; this.verhalten(dt);
     const sp = this.welt.spieler; if (!sp || sp.tot) return;
     const d = this.mitte(_tmp).distanceTo(sp.mitte);

@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
-import { material, faerbe, Texturen } from '../engine/texturen.js';
+import { material, faerbe, Texturen, aktiviereSchatten } from '../engine/texturen.js';
 import { baueSocke, baueFigur } from './sockenmodell.js';
 import { Klammer } from './sammeln.js';
 
@@ -51,6 +51,7 @@ export class NPC {
   get aktiv() { return this.o.aktiv ? this.o.aktiv() : true; }
   update(dt) {
     this.t += dt;
+    if (!this.schattenGesetzt) { this.schattenGesetzt = true; aktiviereSchatten(this.gruppe); }
     const sp = this.welt.spieler; if (!sp) return;
     const d = this.gruppe.position.distanceTo(sp.pos);
     const nah = d < 3.2 && this.aktiv;

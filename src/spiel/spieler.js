@@ -1,7 +1,7 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 import { baueSocke, baueFlusi, OUTFITS } from './sockenmodell.js';
 import { festerKontakt } from '../engine/kollision.js';
-import { Texturen } from '../engine/texturen.js';
+import { Texturen, aktiviereSchatten } from '../engine/texturen.js';
 
 const RADIUS = .5;
 const _n = new THREE.Vector3(), _m = new THREE.Vector3(), _delta = new THREE.Matrix4(), _inv = new THREE.Matrix4();
@@ -23,7 +23,7 @@ export class Spieler {
     this.welt.scene.add(this.gruppe);
     // Blob-Schatten
     this.schatten = new THREE.Mesh(new THREE.CircleGeometry(.5, 12), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .35, depthWrite: false }));
-    this.schatten.rotation.x = -Math.PI / 2; this.welt.scene.add(this.schatten);
+    this.schatten.rotation.x = -Math.PI / 2; this.schatten.userData.keinSchatten = true; this.schatten.visible = false; this.welt.scene.add(this.schatten);
     // Gummizug-Linie
     this.linie = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xe8474c }));
     this.linie.visible = false; this.linie.frustumCulled = false; this.welt.scene.add(this.linie);
@@ -44,6 +44,7 @@ export class Spieler {
     const fl = new THREE.Mesh(new THREE.BoxGeometry(.12, .02, .06), new THREE.MeshBasicMaterial({ color: 0xccccff, transparent: true, opacity: .6 }));
     fl.position.y = .04; this.fliege.add(fl); this.gruppe.add(this.fliege);
     this.welt.scene.add(this.gruppe);
+    aktiviereSchatten(this.gruppe);
     this.setzeNassOptik();
   }
   setzeNassOptik() {
@@ -280,7 +281,6 @@ export class Spieler {
     this.mitte.copy(this.pos).setY(this.pos.y + RADIUS);
     this.gruppe.position.copy(this.pos);
     this.animiere(dt, staerke);
-    this.aktualisiereSchatten();
   }
 
   stampfe() {

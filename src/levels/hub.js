@@ -4,7 +4,7 @@ import { PAARE, KLAMMERN_NOETIG, LEVELNAMEN, LEVEL_REIHENFOLGE } from './daten.j
 
 export const info = {
   name: 'Waschkeller', musik: 'hub', himmel: '#2b2238', tipp: 'Jede gerettete Socke zieht ins Sockendorf. Die Körbe führen in die Level.',
-  nebel: { farbe: '#2b2238', nah: 30, fern: 90 }, licht: { himmel: 0xd8ccff, boden: 0x3a2e4a, intensitaet: .9, sonne: 0xffe2b8, sonneIntensitaet: 1.0, richtung: [3, 10, 2] },
+  nebel: { farbe: '#2b2238', nah: 30, fern: 90 }, licht: { himmel: 0xe4d8ff, boden: 0x4a3e5a, intensitaet: 1.25, sonne: 0xffe2b8, sonneIntensitaet: 1.2, richtung: [3, 10, 2] },
   todesHoehe: -10, spawn: [0, 0, 28], spawnYaw: Math.PI, kamera: { dist: 8 },
 };
 const KORB_POS = {};

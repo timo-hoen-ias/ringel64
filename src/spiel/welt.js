@@ -1,9 +1,10 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 import { Bauer } from '../engine/bau.js';
 import { Partikel } from '../engine/partikel.js';
+import { aktiviereSchatten } from '../engine/texturen.js';
 import { Spieler } from './spieler.js';
 
-// Eine geladene Welt (Hub oder Level): Szene, Kollider, Entitäten, Spieler.
+// Eine geladene Welt (Hub oder Level): Szene, Licht, Kollider, Entitäten, Spieler.
 export class Welt {
   constructor(spiel, schluessel, modul, herkunft = null) {
     this.spiel = spiel; this.schluessel = schluessel; this.info = modul.info;
@@ -15,11 +16,22 @@ export class Welt {
     this.scene.background = new THREE.Color(info.himmel || '#87b7e8');
     if (info.nebel) this.scene.fog = new THREE.Fog(info.nebel.farbe || info.himmel || '#87b7e8', info.nebel.nah ?? 20, info.nebel.fern ?? 70);
     const l = info.licht || {};
-    this.scene.add(new THREE.HemisphereLight(l.himmel || 0xffffff, l.boden || 0x6a6a7a, l.intensitaet ?? 1.0));
-    const sonne = new THREE.DirectionalLight(l.sonne || 0xfff1d6, l.sonneIntensitaet ?? 1.4);
-    sonne.position.set(...(l.richtung || [5, 10, 4])); this.scene.add(sonne);
+    this.scene.add(new THREE.HemisphereLight(l.himmel || 0xffffff, l.boden || 0x6a6a7a, (l.intensitaet ?? 1.0) * .9));
+    this.scene.add(new THREE.AmbientLight(0xffffff, .12));
+    // Sonne mit Schatten, folgt dem Spieler
+    const sonne = new THREE.DirectionalLight(l.sonne || 0xfff1d6, (l.sonneIntensitaet ?? 1.4) * 1.1);
+    this.sonnenRichtung = new THREE.Vector3(...(l.richtung || [5, 10, 4])).normalize();
+    sonne.castShadow = true; sonne.shadow.mapSize.set(2048, 2048);
+    const sk = sonne.shadow.camera; sk.left = -42; sk.right = 42; sk.top = 42; sk.bottom = -42; sk.near = 1; sk.far = 160;
+    sonne.shadow.bias = -0.0006; sonne.shadow.normalBias = .06; sonne.shadow.radius = 3;
+    this.scene.add(sonne); this.scene.add(sonne.target); this.sonne = sonne;
     this.partikel = new Partikel(this.scene);
     this.bauer = new Bauer(this);
+    if (info.aussen) {
+      this.bauer.himmel(info.aussen.himmel || {});
+      if (info.aussen.wolken !== false) this.bauer.wolken(info.aussen.wolken || {});
+      if (info.aussen.sonne !== false) this.bauer.sonne({ richtung: l.richtung || [5, 10, 4], farbe: info.aussen.sonnenFarbe });
+    }
     const spawn = (modul.spawnVon && herkunft && modul.spawnVon(herkunft)) || info.spawn || [0, 1, 0];
     this.spieler = new Spieler(this, new THREE.Vector3(...spawn));
     this.spieler.yaw = info.spawnYaw ?? 0;
@@ -27,6 +39,8 @@ export class Welt {
     modul.baue(this, this.bauer);
     this.spieler.checkpoint.copy(this.spieler.pos);
     for (const k of this.kollider) k.aktualisiere();
+    aktiviereSchatten(this.scene);
+    this.aktualisiereLicht();
   }
   fuegeKollider(k) { this.kollider.push(k); return k; }
   entferneKollider(k) { const i = this.kollider.indexOf(k); if (i >= 0) this.kollider.splice(i, 1); }
@@ -35,6 +49,12 @@ export class Welt {
     const b = { pos: new THREE.Vector3(x, y, z), radius, text, beiBenutzen, aktiv: aktiv || (() => true) };
     this.benutzbar.push(b); return b;
   }
+  aktualisiereLicht() {
+    const p = this.spieler.pos;
+    this.sonne.target.position.copy(p);
+    this.sonne.position.copy(p).addScaledVector(this.sonnenRichtung, 70);
+    if (this.himmelKuppel) this.himmelKuppel.position.copy(this.spiel.renderer.kamera.position);
+  }
 
   update(dt, eingabe, kamera) {
     this.t += dt;
@@ -42,6 +62,7 @@ export class Welt {
     const sp = this.spieler;
     sp.update(dt, eingabe, kamera);
     kamera.update(dt, sp, eingabe, this);
+    this.aktualisiereLicht();
     let hinweis = sp.hinweis;
     // Checkpoints
     for (const c of this.checkpoints) {
@@ -74,6 +95,7 @@ export class Welt {
     this.spiel.hud.setzeHinweis(hinweis);
     for (const k of this.kollider) if (k.beweglich) k.vorher.copy(k.mat);
     this.partikel.update(dt);
+    this.spiel.audio.setzeUnterwasser(sp.inWasser && sp.pos.y + 1.0 < sp.wasserOberflaeche);
     this.info.update && this.info.update(this, dt);
   }
   dispose() {

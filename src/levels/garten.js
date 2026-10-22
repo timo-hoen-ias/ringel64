@@ -6,6 +6,7 @@ export const info = {
   name: 'Wäscheleinen-Höhen', musik: 'garten', himmel: '#8fd0f5', tipp: 'Wind trägt nur trockene Socken. Bettlaken sind Trampoline. Die Amsel hält dich für Nistmaterial.',
   nebel: { farbe: '#bfe6f8', nah: 50, fern: 140 }, licht: { himmel: 0xffffff, boden: 0x5a8a4a, intensitaet: 1.1, sonne: 0xfff6d0, sonneIntensitaet: 1.5, richtung: [6, 12, 4] },
   todesHoehe: -8, spawn: [0, 0, 36], spawnYaw: Math.PI, kamera: { dist: 8.5 },
+  aussen: { himmel: { oben: '#3b7fe0', horizont: '#d6ecff', unten: '#7fb07a' }, wolken: { anzahl: 14, hoehe: 46 } },
 };
 
 export function baue(welt, b) {
@@ -13,6 +14,7 @@ export function baue(welt, b) {
   // Rasen, Terrasse, Zaun
   b.box({ w: 100, h: 1, d: 100, x: 0, y: -1, z: 0, farbe: '#5fae4a', textur: Texturen.gras(), wiederholung: 30 });
   b.box({ w: 30, h: .3, d: 14, x: 0, y: 0, z: 37, farbe: '#b8b0a8', textur: Texturen.karo('#b8b0a8', '#a8a098'), wiederholung: 8 });
+  b.gras({ x: 0, z: -8, w: 88, d: 74, anzahl: 2600, aussparung: [-16, 30, 16, 44] });
   for (const [x, z, w, d] of [[0, -46, 94, .6], [0, 46, 94, .6], [-46, 0, .6, 94], [46, 0, .6, 94]]) b.box({ w, h: 2.6, d, x, y: 0, z, farbe: '#c8a060', textur: Texturen.holz('#c8a060'), wiederholung: 20 });
   for (let i = -44; i <= 44; i += 4) { for (const [x, z] of [[i, -46], [i, 46], [-46, i], [46, i]]) b.box({ w: .7, h: 3.2, d: .7, x, y: 0, z, farbe: '#b08a4a', kollision: false }); }
   b.portal({ x: 7, y: .3, z: 40, ziel: 'hub', name: 'Waschkeller', benoetigt: 0 });

@@ -30,16 +30,16 @@ export function baueSocke({ outfit = OUTFITS[0], groesse = 1, augen = true, loch
   const matGlatt = material(outfit.farbe);
 
   const bein = new THREE.Group(); bein.position.set(0, .3, -.1); g.add(bein);
-  const beinMesh = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.3, .33, .85, 10), outfit.farbe), matBein);
+  const beinMesh = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.3, .33, .85, 18), outfit.farbe), matBein);
   beinMesh.position.y = .42; bein.add(beinMesh);
-  const bund = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.34, .34, .16, 10), outfit.farbe), material(outfit.streifen === 'regenbogen' ? '#ffffff' : outfit.streifen));
+  const bund = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.34, .34, .16, 18), outfit.farbe), material(outfit.streifen === 'regenbogen' ? '#ffffff' : outfit.streifen));
   bund.position.y = .88; bein.add(bund);
 
-  const ferse = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.31, 10, 8), outfit.farbe), matGlatt);
+  const ferse = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.31, 16, 12), outfit.farbe), matGlatt);
   ferse.position.set(0, .3, -.1); g.add(ferse);
   const fuss = new THREE.Mesh(faerbe(new THREE.BoxGeometry(.5, .36, .7), outfit.farbe), matGlatt);
   fuss.position.set(0, .2, .25); g.add(fuss);
-  const zehe = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.26, 10, 8), outfit.farbe), matGlatt);
+  const zehe = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.26, 16, 12), outfit.farbe), matGlatt);
   zehe.position.set(0, .2, .55); zehe.scale.set(1, .75, 1); g.add(zehe);
 
   if (loch) {
@@ -49,7 +49,7 @@ export function baueSocke({ outfit = OUTFITS[0], groesse = 1, augen = true, loch
   const augenGruppe = new THREE.Group(); bein.add(augenGruppe);
   if (augen) {
     for (const s of [-1, 1]) {
-      const a = new THREE.Mesh(new THREE.SphereGeometry(.075, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1a1218 }));
+      const a = new THREE.Mesh(new THREE.SphereGeometry(.075, 12, 8), new THREE.MeshBasicMaterial({ color: 0x1a1218 }));
       a.position.set(s * .13, .62, .27); augenGruppe.add(a);
       const gl = new THREE.Mesh(new THREE.SphereGeometry(.025, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       gl.position.set(s * .13 + .025, .645, .33); augenGruppe.add(gl);

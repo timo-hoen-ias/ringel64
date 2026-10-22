@@ -1,10 +1,12 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
-// N64-Look: Szene in ein kleines Render-Target (ca. 320x240) zeichnen, danach mit
-// Farbquantisierung (16 Bit) und Bayer-Dithering hochskalieren.
+// Rendert die Szene in ein Render-Target und zeichnet es mit Nachbearbeitung auf den Bildschirm.
+// Drei Stufen: 'weich' (halbe Auflösung, MSAA, leichtes Dithering, sanfte Vignette),
+// 'hoch' (volle Auflösung, MSAA, ohne Quantisierung) und 'retro' (320 Pixel breit, 16 Bit, Bayer).
 const VERTEX = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 const FRAGMENT = `
   uniform sampler2D tBild; uniform vec2 aufloesung; uniform float blitz; uniform float dunkel;
+  uniform float stufen; uniform float dither; uniform float vignette; uniform float saettigung;
   varying vec2 vUv;
   float bayer(vec2 p){
     int x = int(mod(p.x, 4.0)); int y = int(mod(p.y, 4.0));
@@ -17,39 +19,63 @@ const FRAGMENT = `
   void main(){
     vec3 c = texture2D(tBild, vUv).rgb;
     c = pow(max(c, 0.0), vec3(1.0 / 2.2));
-    float d = (bayer(vUv * aufloesung) - 0.5) / 31.0;
-    c = floor((c + d) * 31.0 + 0.5) / 31.0;
+    float grau = dot(c, vec3(0.299, 0.587, 0.114));
+    c = mix(vec3(grau), c, saettigung);
+    if (stufen > 0.0) {
+      float d = (bayer(vUv * aufloesung) - 0.5) / stufen * dither;
+      c = floor((c + d) * stufen + 0.5) / stufen;
+    }
+    vec2 q = vUv - 0.5; float v = 1.0 - dot(q, q) * vignette;
+    c *= clamp(v, 0.0, 1.0);
     c = mix(c, vec3(1.0), blitz);
     c *= 1.0 - dunkel;
     gl_FragColor = vec4(c, 1.0);
   }`;
+
+const STUFEN = {
+  retro: { breite: 320, samples: 0, stufen: 31, dither: 1, vignette: .35, filter: THREE.NearestFilter, saettigung: 1.0 },
+  weich: { skala: .5, min: 640, samples: 4, stufen: 63, dither: .6, vignette: .5, filter: THREE.LinearFilter, saettigung: 1.08 },
+  hoch: { skala: 1, min: 960, samples: 4, stufen: 0, dither: 0, vignette: .45, filter: THREE.LinearFilter, saettigung: 1.08 },
+};
 
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
     this.gl.setPixelRatio(1);
-    this.gl.shadowMap.enabled = false;
-    this.breite = 320;
-    this.ziel = new THREE.WebGLRenderTarget(320, 240, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+    this.gl.shadowMap.enabled = true;
+    this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.material = new THREE.ShaderMaterial({
-      uniforms: { tBild: { value: this.ziel.texture }, aufloesung: { value: new THREE.Vector2(320, 240) },
-        blitz: { value: 0 }, dunkel: { value: 0 } },
+      uniforms: { tBild: { value: null }, aufloesung: { value: new THREE.Vector2(320, 240) }, blitz: { value: 0 }, dunkel: { value: 0 },
+        stufen: { value: 0 }, dither: { value: 0 }, vignette: { value: .4 }, saettigung: { value: 1 } },
       vertexShader: VERTEX, fragmentShader: FRAGMENT, depthTest: false, depthWrite: false,
     });
     this.quadSzene = new THREE.Scene();
     this.quadSzene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material));
     this.quadKamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    this.kamera = new THREE.PerspectiveCamera(60, 4 / 3, 0.1, 400);
-    this.wackeln = 0;
+    this.kamera = new THREE.PerspectiveCamera(58, 4 / 3, 0.1, 500);
+    this.wackeln = 0; this.ziel = null;
+    let stufe = 'weich';
+    try { stufe = localStorage.getItem('ringel64.grafik') || 'weich'; } catch (e) { /* egal */ }
+    this.setzeStufe(STUFEN[stufe] ? stufe : 'weich');
     window.addEventListener('resize', () => this.groesse());
+  }
+  setzeStufe(name) {
+    this.stufe = name; const s = STUFEN[name];
+    this.material.uniforms.stufen.value = s.stufen; this.material.uniforms.dither.value = s.dither;
+    this.material.uniforms.vignette.value = s.vignette; this.material.uniforms.saettigung.value = s.saettigung;
+    try { localStorage.setItem('ringel64.grafik', name); } catch (e) { /* egal */ }
     this.groesse();
   }
   groesse() {
     const w = window.innerWidth, h = window.innerHeight;
     this.gl.setSize(w, h, false);
-    const zb = this.breite, zh = Math.max(120, Math.round(zb * h / w));
-    this.ziel.setSize(zb, zh);
+    const s = STUFEN[this.stufe];
+    let zb = s.breite || Math.max(s.min, Math.round(w * s.skala)); zb = Math.min(zb, w);
+    const zh = Math.max(120, Math.round(zb * h / w));
+    if (this.ziel) this.ziel.dispose();
+    this.ziel = new THREE.WebGLRenderTarget(zb, zh, { minFilter: s.filter, magFilter: s.filter, depthBuffer: true, samples: s.samples });
+    this.material.uniforms.tBild.value = this.ziel.texture;
     this.material.uniforms.aufloesung.value.set(zb, zh);
     this.kamera.aspect = zb / zh; this.kamera.updateProjectionMatrix();
   }
@@ -66,3 +92,4 @@ export class Renderer {
   blitz(staerke = .6) { this.material.uniforms.blitz.value = staerke; }
   setzeDunkel(v) { this.material.uniforms.dunkel.value = v; }
 }
+export const GRAFIK_STUFEN = Object.keys(STUFEN);

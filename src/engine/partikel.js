@@ -7,7 +7,7 @@ export class Partikel {
     this.pool = [];
     for (let i = 0; i < anzahl; i++) {
       const m = new THREE.Mesh(this.geo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      m.visible = false; m.frustumCulled = false; szene.add(m);
+      m.visible = false; m.frustumCulled = false; m.userData.keinSchatten = true; szene.add(m);
       this.pool.push({ mesh: m, leben: 0, v: new THREE.Vector3(), g: 0, groesse: .1, maxLeben: 1, schrumpf: true });
     }
     this.naechster = 0;

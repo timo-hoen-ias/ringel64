@@ -1,5 +1,5 @@
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
-import { material, faerbe } from '../engine/texturen.js';
+import { material, faerbe, aktiviereSchatten } from '../engine/texturen.js';
 import { baueSocke, OUTFITS } from './sockenmodell.js';
 
 const _tmp = new THREE.Vector3();
@@ -13,6 +13,7 @@ class Sammelobjekt {
   }
   update(dt) {
     if (this.weg) return;
+    if (!this.schattenGesetzt) { this.schattenGesetzt = true; aktiviereSchatten(this.gruppe); }
     this.t += dt;
     this.animiere(dt);
     const sp = this.welt.spieler;

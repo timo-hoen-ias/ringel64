@@ -75,6 +75,7 @@ export class Audio {
     this.rauschen = buf;
     if (this.liedName) this.spieleMusik(this.liedName, true);
   }
+  setzeUnterwasser(an) { this.unterwasser = an; }
   setzeLautstaerke(musik, sfx) {
     this.musikLaut = musik; this.sfxLaut = sfx;
     if (this.musikGain) this.musikGain.gain.value = musik;

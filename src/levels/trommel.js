@@ -46,7 +46,8 @@ export function baue(welt, b) {
   // Wasser und Heizplatte unten
   const wasser = b.wasser({ w: 9, h: 1.3, d: 16, x: 0, y: 0, z: 0 });
   const wasserK = wasser.userData.kollider;
-  const hitze = b.hitze({ w: 9, h: 2, d: 16, x: 0, y: 0, z: 0, sichtbar: true, farbe: '#ff5a1a' }); const hitzeK = hitze.userData.kollider; hitzeK.aktiv = false; hitze.visible = false;
+  const hitze = b.hitze({ w: 9, h: 2, d: 16, x: 0, y: 0, z: 0, farbe: '#ff5a1a' }); const hitzeK = hitze.userData.kollider; hitzeK.aktiv = false;
+  const glutBoden = new THREE.Mesh(new THREE.PlaneGeometry(9, 16), new THREE.MeshBasicMaterial({ color: 0xff5a1a, transparent: true, opacity: .45 })); glutBoden.rotation.x = -Math.PI / 2; glutBoden.position.set(0, .06, 0); glutBoden.visible = false; welt.scene.add(glutBoden);
   // Ausgang vorn unten
   const tuerDisc = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, .2, 14), new THREE.MeshBasicMaterial({ color: 0x2a1a2e })); tuerDisc.rotation.x = Math.PI / 2; tuerDisc.position.set(0, 1.8, 9.0); welt.scene.add(tuerDisc);
   b.schild({ text: 'Ausgang', x: 0, y: 2.9, z: 9.0, b: 2.4, h: .8, pfosten: false });
@@ -64,7 +65,7 @@ export function baue(welt, b) {
     if (!kampf.laeuft) return;
     if (kampf.phase >= 2) { // Kochwäsche: Boden wechselt zwischen Wasser und Hitze
       kampf.taktTimer += dt; const heiss = (kampf.taktTimer % 6) > 3;
-      if (heiss !== kampf.heiss) { kampf.heiss = heiss; hitzeK.aktiv = heiss; hitze.visible = heiss; wasserK.aktiv = !heiss; wasser.visible = !heiss; welt.spiel.audio.sfx(heiss ? 'trocken' : 'nass'); }
+      if (heiss !== kampf.heiss) { kampf.heiss = heiss; hitzeK.aktiv = heiss; glutBoden.visible = heiss; wasserK.aktiv = !heiss; wasser.visible = !heiss; welt.spiel.audio.sfx(heiss ? 'trocken' : 'nass'); }
       if (heiss && Math.random() < dt * 12) welt.partikel.spawn(new THREE.Vector3((Math.random() - .5) * 8, .3, (Math.random() - .5) * 14), { anzahl: 1, farbe: 0xffffff, geschwindigkeit: 1, leben: .8, gravitation: 2, groesse: .12 });
     }
     if (kampf.phase >= 2) { kampf.klumpenTimer -= dt; if (kampf.klumpenTimer <= 0 && welt.gegner.length < (kampf.phase >= 3 ? 3 : 2)) { kampf.klumpenTimer = 5;
@@ -81,7 +82,7 @@ export function baue(welt, b) {
   };
   const sieg = () => {
     kampf.laeuft = false; let w = kampf.omega; const bremse = { update: dt => { w = Math.max(0, w - dt * .3); kampf.omega = w; if (w === 0) welt.dinge.splice(welt.dinge.indexOf(bremse), 1); } }; welt.dinge.push(bremse);
-    hitzeK.aktiv = false; hitze.visible = false; wasserK.aktiv = true; wasser.visible = true;
+    hitzeK.aktiv = false; glutBoden.visible = false; wasserK.aktiv = true; wasser.visible = true;
     for (const g of [...welt.gegner]) g.stirb();
     welt.spiel.audio.stoppeMusik(); welt.spiel.audio.sfx('fanfare');
     setTimeout(() => dialog.zeige([
