@@ -21,7 +21,7 @@ export class Welt {
     // Sonne mit Schatten, folgt dem Spieler
     const sonne = new THREE.DirectionalLight(l.sonne || 0xfff1d6, (l.sonneIntensitaet ?? 1.4) * 1.1);
     this.sonnenRichtung = new THREE.Vector3(...(l.richtung || [5, 10, 4])).normalize();
-    sonne.castShadow = true; sonne.shadow.mapSize.set(2048, 2048);
+    sonne.castShadow = spiel.renderer.schatten; sonne.shadow.mapSize.set(2048, 2048);
     const sk = sonne.shadow.camera; sk.left = -42; sk.right = 42; sk.top = 42; sk.bottom = -42; sk.near = 1; sk.far = 160;
     sonne.shadow.bias = -0.0006; sonne.shadow.normalBias = .06; sonne.shadow.radius = 3;
     this.scene.add(sonne); this.scene.add(sonne.target); this.sonne = sonne;
@@ -95,7 +95,8 @@ export class Welt {
     this.spiel.hud.setzeHinweis(hinweis);
     for (const k of this.kollider) if (k.beweglich) k.vorher.copy(k.mat);
     this.partikel.update(dt);
-    this.spiel.audio.setzeUnterwasser(sp.inWasser && sp.pos.y + 1.0 < sp.wasserOberflaeche);
+    const unterWasser = sp.inWasser && sp.pos.y + 1.0 < sp.wasserOberflaeche;
+    this.spiel.audio.setzeUnterwasser(unterWasser); this.spiel.renderer.setzeUnterwasser(unterWasser);
     this.info.update && this.info.update(this, dt);
   }
   dispose() {

@@ -173,8 +173,8 @@ export class Spieler {
       const kannSpringen = (this.amBoden || this.coyote > 0);
       if (this.puffer > 0 && !this.schlaeft) {
         if (this.inWasser) {
-          if (this.pos.y > this.wasserOberflaeche - .9) { this.v.y = 10; this.puffer = 0; this.inWasser = false; audio.sfx('springen'); this.doppel = true; }
-          else { this.v.y = Math.max(this.v.y, 4.5); this.puffer = 0; audio.sfx('blubb'); this.welt.partikel.spawn(this.mitte, { anzahl: 3, farbe: 0xbfe8ff, geschwindigkeit: 1.5, gravitation: 3, leben: .5 }); }
+          if (this.pos.y > this.wasserOberflaeche - .9) { this.v.y = 10; this.puffer = 0; this.inWasser = false; audio.sfx('springen'); this.doppel = true; this.eigenerSprung = true; }
+          else { this.puffer = 0; audio.sfx('blubb'); this.welt.partikel.spawn(this.mitte, { anzahl: 3, farbe: 0xbfe8ff, geschwindigkeit: 1.5, gravitation: 3, leben: .5 }); }
         } else if (kannSpringen) {
           this.v.y = this.nass ? 10 : 11.5; this.puffer = 0; this.coyote = 0; this.amBoden = false; this.doppel = true; this.eigenerSprung = true; audio.sfx('springen');
           this.welt.partikel.spawn(this.pos, { anzahl: 5, farbe: 0xd8d2e0, geschwindigkeit: 2, leben: .4, groesse: .1 });
@@ -195,11 +195,16 @@ export class Spieler {
       this.gleitet = !this.nass && !this.amBoden && !this.inWasser && !this.stampft && this.sprungGehalten && this.v.y < 0 && this.luftZeit > .25 && !this.doppel;
       // Schwerkraft
       let g = this.nass ? -36 : -28;
-      if (this.inWasser) g = -5;
+      if (this.inWasser) { // Schwimmen: Springen gedrückt = auftauchen, Stampfen gedrückt = abtauchen, sonst langsam sinken
+        g = -4;
+        if (this.sprungGehalten) this.v.y = Math.min(this.v.y + 30 * dt, 4.5);
+        else if (eingabe.gehalten('stampf')) this.v.y = Math.max(this.v.y - 30 * dt, -5);
+        if (Math.random() < dt * 3) this.welt.partikel.spawn(this.mitte, { anzahl: 1, farbe: 0xdff4ff, geschwindigkeit: .6, gravitation: 3, leben: 1.2, groesse: .09 });
+      }
       if (this.gleitet) { g = -6; if (this.v.y < -2.2) this.v.y = -2.2; }
       if (this.stampft) g = -10;
       this.v.y += g * dt;
-      if (this.inWasser && this.v.y < -3) this.v.y = -3;
+      if (this.inWasser && this.v.y < -2 && !eingabe.gehalten('stampf')) this.v.y = -2;
       if (this.v.y < -40) this.v.y = -40;
     }
     if (this.dreht > 0) this.dreht -= dt;

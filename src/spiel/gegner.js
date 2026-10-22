@@ -261,8 +261,51 @@ class Teddy extends Gegner {
   }
 }
 
+// Zierfisch: schwimmt Wegpunkte in 3D ab, jagt den Spieler, wenn er nah ist
+class Fisch extends Gegner {
+  constructor(welt, o) {
+    super(welt, { radius: .7, staubFarbe: 0xffa040, ...o });
+    const f = o.farbe || '#ff8a30';
+    const k = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.6, 14, 10), f), material(f, { glanz: 40 })); k.scale.set(.7, 1, 1.5); k.position.y = .6; this.gruppe.add(k);
+    const s = new THREE.Mesh(faerbe(new THREE.ConeGeometry(.45, .7, 4), f), material(f)); s.rotation.x = -Math.PI / 2; s.position.set(0, .6, -1.1); this.gruppe.add(s); this.schwanz = s;
+    const fl = new THREE.Mesh(faerbe(new THREE.ConeGeometry(.3, .5, 4), f), material(f)); fl.position.set(0, 1.2, 0); this.gruppe.add(fl);
+    for (const sd of [-1, 1]) { const a = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x1a1218 })); a.position.set(sd * .3, .75, .6); this.gruppe.add(a); }
+    const m = new THREE.Mesh(new THREE.BoxGeometry(.25, .08, .1), new THREE.MeshBasicMaterial({ color: 0x2a1a2e })); m.position.set(0, .45, .9); this.gruppe.add(m);
+    this.jagd = 0;
+  }
+  verhalten(dt) {
+    this.schwanz.rotation.y = Math.sin(this.t * 9) * .5;
+    const sp = this.welt.spieler; const d = this.gruppe.position.distanceTo(sp.pos);
+    if (d < (this.o.reichweite || 7) && sp.inWasser) this.jagd = 1.5; else this.jagd -= dt;
+    if (this.jagd > 0) { _tmp.subVectors(sp.mitte, this.gruppe.position).setY(sp.mitte.y - this.gruppe.position.y - .6); const l = _tmp.length(); if (l > .3) { _tmp.divideScalar(l); this.gruppe.position.addScaledVector(_tmp, (this.o.tempo || 3.2) * dt); this.schauZu(dt, sp.pos, 5); } }
+    else this.patrouille(dt, this.o.tempo || 2.4);
+    this.gruppe.position.y += Math.sin(this.t * 2) * dt * .3;
+  }
+}
+
+// Schneeball: rollt auf den Spieler zu und wächst dabei
+class Schneeball extends Gegner {
+  constructor(welt, o) {
+    super(welt, { radius: .6, staubFarbe: 0xffffff, ...o });
+    const k = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.6, 14, 10), '#f4f8ff', { variation: .08 }), material('#f4f8ff')); k.position.y = .6; this.gruppe.add(k); this.kugel = k;
+    for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.SphereGeometry(.08, 6, 5), new THREE.MeshBasicMaterial({ color: 0x2a1a2e })); a.position.set(s * .2, .75, .5); this.gruppe.add(a); }
+    this.groesse = 1; this.v = new THREE.Vector3(); this.start = this.gruppe.position.clone();
+  }
+  verhalten(dt) {
+    const sp = this.welt.spieler; const d = this.gruppe.position.distanceTo(sp.pos);
+    if (d < (this.o.reichweite || 14) && Math.abs(sp.pos.y - this.bodenY) < 3) { _tmp.subVectors(sp.pos, this.gruppe.position).setY(0).normalize(); this.v.addScaledVector(_tmp, 5 * dt);
+      this.groesse = Math.min(2.4, this.groesse + dt * .12); }
+    else { _tmp.subVectors(this.start, this.gruppe.position).setY(0); if (_tmp.length() > 1) { _tmp.normalize(); this.v.addScaledVector(_tmp, 3 * dt); } this.groesse = Math.max(1, this.groesse - dt * .2); }
+    this.v.multiplyScalar(1 - dt * 1.2); const max = 5.5 / this.groesse; if (this.v.length() > max) this.v.setLength(max);
+    this.gruppe.position.addScaledVector(this.v, dt); this.gruppe.position.y = this.bodenY;
+    this.gruppe.scale.setScalar(this.groesse); this.radius = .6 * this.groesse; this.hp = this.groesse > 1.8 ? 2 : 1;
+    this.kugel.rotation.x += this.v.z * dt / this.groesse; this.kugel.rotation.z -= this.v.x * dt / this.groesse;
+    if (this.v.length() > 1 && Math.random() < dt * 6) this.welt.partikel.spawn(this.gruppe.position, { anzahl: 1, farbe: 0xffffff, geschwindigkeit: 1, leben: .5, groesse: .1 });
+  }
+}
+
 export function erzeugeGegner(welt, art, o) {
-  const K = { ente: Ente, magnet: Magnet, staubmaus: Staubmaus, flamme: Flamme, amsel: Amsel, klumpen: Klumpen, teddy: Teddy }[art];
+  const K = { ente: Ente, magnet: Magnet, staubmaus: Staubmaus, flamme: Flamme, amsel: Amsel, klumpen: Klumpen, teddy: Teddy, fisch: Fisch, schneeball: Schneeball }[art];
   if (!K) throw new Error('Unbekannter Gegner ' + art);
   return new K(welt, { art, ...o });
 }

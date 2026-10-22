@@ -120,7 +120,7 @@ export class Knopf extends Sammelobjekt {
   constructor(welt, id, pos, outfit) {
     super(welt, id, pos, .9); this.outfit = outfit;
     if (this.weg) return;
-    const farbe = ['#3b6fd8', '#3a9a4a', '#c8c0ac', '#f5d44a', '#2b2b35', '#ff6b6b', '#f0c040'][(outfit - 1) % 7];
+    const farbe = ['#3b6fd8', '#3a9a4a', '#c8c0ac', '#f5d44a', '#2b2b35', '#ff6b6b', '#f0c040', '#2fc0a0', '#c8c0b4'][(outfit - 1) % 9];
     const d = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.4, .4, .1, 14), farbe), material(farbe));
     d.rotation.x = Math.PI / 2; d.position.y = .5; this.gruppe.add(d);
     for (const [x, y] of [[-.12, .62], [.12, .62], [-.12, .38], [.12, .38]]) {

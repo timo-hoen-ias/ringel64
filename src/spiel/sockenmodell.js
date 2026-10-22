@@ -11,6 +11,8 @@ export const OUTFITS = [
   { name: 'Business-Socke', farbe: '#2b2b35', streifen: '#444455', breite: 1, zubehoer: 'krawatte' },
   { name: 'Regenbogensocke', farbe: '#ff6b6b', streifen: 'regenbogen', breite: 2 },
   { name: 'Glückssocke', farbe: '#f0c040', streifen: '#fff2b0', breite: 3, zubehoer: 'kleeblatt' },
+  { name: 'Tauchersocke', farbe: '#2f6fd8', streifen: '#2fc0a0', breite: 3, zubehoer: 'taucherbrille' },
+  { name: 'Wollsocke', farbe: '#c8c0b4', streifen: '#a89c8c', breite: 2, zubehoer: 'wollbommel' },
 ];
 
 function regenbogenTextur() {
@@ -71,6 +73,15 @@ export function baueSocke({ outfit = OUTFITS[0], groesse = 1, augen = true, loch
   }
   if (outfit.zubehoer === 'krawatte') {
     const k = new THREE.Mesh(faerbe(new THREE.BoxGeometry(.12, .45, .04), '#d33'), material('#d33')); k.position.set(0, .45, .32); bein.add(k);
+  }
+  if (outfit.zubehoer === 'taucherbrille') {
+    const r = new THREE.Mesh(new THREE.TorusGeometry(.2, .05, 8, 14), material('#1a1a24', { vertexColors: false })); r.position.set(0, .62, .3); bein.add(r);
+    const gl = new THREE.Mesh(new THREE.CircleGeometry(.17, 12), new THREE.MeshBasicMaterial({ color: 0x9ad1e8, transparent: true, opacity: .55 })); gl.position.set(0, .62, .31); bein.add(gl);
+    const sch = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .5, 6), material('#e8474c', { vertexColors: false })); sch.position.set(.3, .95, -.1); bein.add(sch);
+  }
+  if (outfit.zubehoer === 'wollbommel') {
+    const b = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.16, 10, 8), '#e8474c'), material('#e8474c')); b.position.set(0, 1.02, -.18); bein.add(b);
+    const f = new THREE.Mesh(faerbe(new THREE.OctahedronGeometry(.12, 0), '#9ad1e8'), material('#9ad1e8')); f.position.set(0, .45, .34); f.scale.z = .3; bein.add(f);
   }
   if (outfit.zubehoer === 'kleeblatt') for (let i = 0; i < 4; i++) {
     const b = new THREE.Mesh(faerbe(new THREE.SphereGeometry(.07, 6, 5), '#3aa84a'), material('#3aa84a'));
@@ -135,6 +146,17 @@ export function baueFigur(art) {
       teil(new THREE.CylinderGeometry(.06, .06, .6, 5), '#555', 0, 2.6, 0); teil(new THREE.SphereGeometry(.12, 6, 5), '#e8474c', 0, 2.95, 0);
       teil(new THREE.BoxGeometry(.3, 1, .3), '#8fa3b8', -.8, .9, 0); teil(new THREE.BoxGeometry(.3, 1, .3), '#8fa3b8', .8, .9, 0);
       teil(new THREE.BoxGeometry(.4, .3, .5), '#555', -.3, .15, 0); teil(new THREE.BoxGeometry(.4, .3, .5), '#555', .3, .15, 0); augen(2.1, .42, .22, .09); break;
+    case 'taucher': teil(new THREE.BoxGeometry(1.1, 1.3, .7), '#e8a030', 0, .95, 0); teil(new THREE.CylinderGeometry(.25, .3, .6, 8), '#e8a030', -.35, .3, 0); teil(new THREE.CylinderGeometry(.25, .3, .6, 8), '#e8a030', .35, .3, 0);
+      teil(new THREE.SphereGeometry(.55, 14, 10), '#c8b070', 0, 2.0, 0); teil(new THREE.CircleGeometry(.3, 12), '#9ad1e8', 0, 2.05, .5);
+      teil(new THREE.CylinderGeometry(.22, .22, 1.2, 8), '#8a8a98', -.45, 1.0, -.45); teil(new THREE.CylinderGeometry(.22, .22, 1.2, 8), '#8a8a98', .45, 1.0, -.45); break;
+    case 'schnecke': { const h = teil(new THREE.SphereGeometry(.7, 14, 10), '#c87a3a', 0, .75, -.3); h.scale.set(1, 1, .9);
+      teil(new THREE.TorusGeometry(.4, .14, 8, 14), '#8a4a1a', 0, .75, -.3).rotation.y = Math.PI / 2;
+      teil(new THREE.BoxGeometry(.6, .4, 1.6), '#9ad17a', 0, .2, .3); for (const s of [-1, 1]) { teil(new THREE.CylinderGeometry(.04, .04, .6, 5), '#9ad17a', s * .15, .7, 1.0).rotation.x = -.4; }
+      augen(.98, 1.05, .15, .07); break; }
+    case 'schneemann': teil(new THREE.SphereGeometry(1.1, 16, 12), '#f4f8ff', 0, 1.0, 0); teil(new THREE.SphereGeometry(.8, 16, 12), '#f4f8ff', 0, 2.5, 0); teil(new THREE.SphereGeometry(.55, 14, 10), '#f4f8ff', 0, 3.6, 0);
+      teil(new THREE.ConeGeometry(.12, .6, 8), '#ff8c3a', 0, 3.6, .75).rotation.x = Math.PI / 2; teil(new THREE.CylinderGeometry(.5, .5, .5, 12), '#2a1a2e', 0, 4.3, 0); teil(new THREE.CylinderGeometry(.75, .75, .08, 12), '#2a1a2e', 0, 4.1, 0);
+      for (let i = 0; i < 3; i++) teil(new THREE.SphereGeometry(.07, 6, 5), '#2a1a2e', 0, 2.2 + i * .4, .78); teil(new THREE.BoxGeometry(1.2, .25, .3), '#e8474c', 0, 3.1, .2);
+      teil(new THREE.CylinderGeometry(.05, .05, 1.6, 5), '#6a4a2a', -1.3, 2.6, 0).rotation.z = .9; teil(new THREE.CylinderGeometry(.05, .05, 1.6, 5), '#6a4a2a', 1.3, 2.6, 0).rotation.z = -.9; augen(3.72, .48, .18, .07); break;
     case 'heizung': teil(new THREE.BoxGeometry(2.4, 1.6, .5), '#e8e8e8', 0, .8, 0);
       for (let i = 0; i < 6; i++) teil(new THREE.BoxGeometry(.25, 1.4, .55), '#d0d0d0', -1 + i * .4, .8, 0); augen(1.0, .3, .3, .08); break;
   }

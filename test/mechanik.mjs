@@ -14,6 +14,7 @@ const pruefe = (name, ok, info = '') => { ergebnisse.push(`${ok ? 'OK  ' : 'FEHL
 const ev = (fn, arg) => page.evaluate(fn, arg);
 const lade = async (level, extra = {}) => {
   await page.goto('http://localhost:8765/', { waitUntil: 'networkidle' });
+  await ev(() => { localStorage.setItem('ringel64.grafik', 'retro'); localStorage.setItem('ringel64.schatten', '0'); });
   await ev((d) => localStorage.setItem('ringel64.spielstand.v1', JSON.stringify(d)), { level, klammern: 40, outfits: [0], outfit: 0, bosse: {}, flags: {}, gesammelt: {}, gerettet: {}, leben: 3, flusen: 0, socken: 0, knoepfe: 0, ...extra });
   await page.reload({ waitUntil: 'networkidle' });
   await page.keyboard.press('Enter');
@@ -26,6 +27,8 @@ const spieler = () => ev(() => { const s = window.ringel.welt.spieler; return { 
 
 // ---- Bad ----
 await lade('bad');
+const fps = await ev(() => new Promise(r => { let n = 0; const t0 = performance.now(); const f = () => { n++; if (performance.now() - t0 > 1000) r(n); else requestAnimationFrame(f); }; requestAnimationFrame(f); }));
+console.log('FPS headless:', fps);
 await dialogWeg();
 let s = await spieler(); pruefe('Spawn steht am Boden', s.amBoden && Math.abs(s.y) < .1, JSON.stringify(s));
 page.keyboard.down('Space'); let h = await maxY(900); await page.keyboard.up('Space'); pruefe('Sprunghöhe einfach ≈2.3', h > 1.9 && h < 2.8, h.toFixed(2));

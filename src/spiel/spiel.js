@@ -8,6 +8,7 @@ import { Kamera } from './kamera.js';
 import { Welt } from './welt.js';
 import { OUTFITS } from './sockenmodell.js';
 import { LEVELS } from '../levels/index.js';
+import { KLAMMERN_GESAMT, SOCKEN_GESAMT } from '../levels/daten.js';
 
 // Spielzustände: titel → uebergang → spiel ⇄ pause, dazu dialog (im Spiel) und ende.
 export class Spiel {
@@ -45,7 +46,9 @@ export class Spiel {
     const g = document.getElementById('pause-grafik');
     const NAMEN = { weich: 'Weich', hoch: 'Hoch', retro: 'Retro (N64)' };
     const zeichneGrafik = () => { g.innerHTML = ''; for (const st of GRAFIK_STUFEN) { const el = document.createElement('div'); el.className = 'outfit' + (this.renderer.stufe === st ? ' aktiv' : ''); el.textContent = NAMEN[st];
-      el.addEventListener('click', () => { this.renderer.setzeStufe(st); zeichneGrafik(); }); g.appendChild(el); } };
+      el.addEventListener('click', () => { this.renderer.setzeStufe(st); zeichneGrafik(); }); g.appendChild(el); }
+      const sch = document.createElement('div'); sch.className = 'outfit' + (this.renderer.schatten ? ' aktiv' : ''); sch.textContent = this.renderer.schatten ? 'Schatten: an' : 'Schatten: aus';
+      sch.addEventListener('click', () => { this.renderer.setzeSchatten(!this.renderer.schatten); if (this.welt) this.welt.sonne.castShadow = this.renderer.schatten; zeichneGrafik(); }); g.appendChild(sch); };
     zeichneGrafik();
     const ml = document.getElementById('musik-laut'), sl = document.getElementById('sfx-laut');
     const laut = () => { this.audio.setzeLautstaerke(ml.value / 100, sl.value / 100); try { localStorage.setItem('ringel64.laut', JSON.stringify([ml.value, sl.value])); } catch (e) {} };
@@ -87,7 +90,7 @@ export class Spiel {
     const d = this.spielstand.daten;
     const min = Math.floor(d.spielzeit / 60);
     document.getElementById('pause-statistik').innerHTML =
-      `Klammern ${d.klammern} / 44 · Flusen ${d.flusen} · Socken gerettet ${d.socken} / 18 · Knöpfe ${d.knoepfe} / 7<br>Spielzeit ${min} min · Leben ${d.leben}`;
+      `Klammern ${d.klammern} / ${KLAMMERN_GESAMT} · Flusen ${d.flusen} · Socken gerettet ${d.socken} / ${SOCKEN_GESAMT} · Knöpfe ${d.knoepfe} / ${OUTFITS.length - 1}<br>Spielzeit ${min} min · Leben ${d.leben}`;
     const o = document.getElementById('pause-outfits'); o.innerHTML = '';
     OUTFITS.forEach((f, i) => {
       const frei = d.outfits.includes(i);
@@ -106,7 +109,7 @@ export class Spiel {
     document.getElementById('ende-text').innerHTML = `
       <p>Baron von Trommel hat nie aus Bosheit geklaut. Seine Heizspirale war kaputt, ihm war kalt,<br>und aus den Socken wollte er sich einen Pullover stricken.</p>
       <p>Ringel hat die Spirale repariert. Der Baron ist jetzt der Wärmespender des Waschkellers<br>und brummt zufrieden vor sich hin. Ringelinde ist wieder da.</p>
-      <p>Klammern: ${d.klammern} / 44 · Socken gerettet: ${d.socken} / 18 · Flusen: ${d.flusen} · Outfits: ${d.outfits.length} / 8</p>
+      <p>Klammern: ${d.klammern} / ${KLAMMERN_GESAMT} · Socken gerettet: ${d.socken} / ${SOCKEN_GESAMT} · Flusen: ${d.flusen} · Outfits: ${d.outfits.length} / ${OUTFITS.length}</p>
       <p style="color:var(--gold)">Ringel 64 · Flusi · Gunther die Fliege · Alle Socken dieser Welt</p>
       <p style="opacity:.7">Ein Spiel aus Boxen, Zylindern und viel zu viel Fussel.</p>`;
     this.ui.ende.style.display = 'flex';

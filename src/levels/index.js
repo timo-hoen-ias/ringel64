@@ -5,6 +5,8 @@ import * as herd from './herd.js';
 import * as kinderzimmer from './kinderzimmer.js';
 import * as bett from './bett.js';
 import * as garten from './garten.js';
+import * as aquarium from './aquarium.js';
+import * as winter from './winter.js';
 import * as trommel from './trommel.js';
 
-export const LEVELS = { hub, bad, kuehlschrank, herd, kinderzimmer, bett, garten, trommel };
+export const LEVELS = { hub, bad, kuehlschrank, herd, kinderzimmer, bett, garten, aquarium, winter, trommel };

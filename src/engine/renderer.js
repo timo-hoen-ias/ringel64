@@ -6,7 +6,7 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/
 const VERTEX = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 const FRAGMENT = `
   uniform sampler2D tBild; uniform vec2 aufloesung; uniform float blitz; uniform float dunkel;
-  uniform float stufen; uniform float dither; uniform float vignette; uniform float saettigung;
+  uniform float stufen; uniform float dither; uniform float vignette; uniform float saettigung; uniform float wasser;
   varying vec2 vUv;
   float bayer(vec2 p){
     int x = int(mod(p.x, 4.0)); int y = int(mod(p.y, 4.0));
@@ -27,6 +27,7 @@ const FRAGMENT = `
     }
     vec2 q = vUv - 0.5; float v = 1.0 - dot(q, q) * vignette;
     c *= clamp(v, 0.0, 1.0);
+    c = mix(c, c * vec3(0.55, 0.85, 1.15) + vec3(0.0, 0.03, 0.08), wasser);
     c = mix(c, vec3(1.0), blitz);
     c *= 1.0 - dunkel;
     gl_FragColor = vec4(c, 1.0);
@@ -47,7 +48,7 @@ export class Renderer {
     this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.material = new THREE.ShaderMaterial({
       uniforms: { tBild: { value: null }, aufloesung: { value: new THREE.Vector2(320, 240) }, blitz: { value: 0 }, dunkel: { value: 0 },
-        stufen: { value: 0 }, dither: { value: 0 }, vignette: { value: .4 }, saettigung: { value: 1 } },
+        stufen: { value: 0 }, dither: { value: 0 }, vignette: { value: .4 }, saettigung: { value: 1 }, wasser: { value: 0 } },
       vertexShader: VERTEX, fragmentShader: FRAGMENT, depthTest: false, depthWrite: false,
     });
     this.quadSzene = new THREE.Scene();
@@ -55,11 +56,13 @@ export class Renderer {
     this.quadKamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.kamera = new THREE.PerspectiveCamera(58, 4 / 3, 0.1, 500);
     this.wackeln = 0; this.ziel = null;
-    let stufe = 'weich';
-    try { stufe = localStorage.getItem('ringel64.grafik') || 'weich'; } catch (e) { /* egal */ }
+    let stufe = 'weich'; this.schatten = true;
+    try { stufe = localStorage.getItem('ringel64.grafik') || 'weich'; this.schatten = localStorage.getItem('ringel64.schatten') !== '0'; } catch (e) { /* egal */ }
+    this.gl.shadowMap.enabled = this.schatten;
     this.setzeStufe(STUFEN[stufe] ? stufe : 'weich');
     window.addEventListener('resize', () => this.groesse());
   }
+  setzeSchatten(an) { this.schatten = an; this.gl.shadowMap.enabled = an; try { localStorage.setItem('ringel64.schatten', an ? '1' : '0'); } catch (e) { /* egal */ } }
   setzeStufe(name) {
     this.stufe = name; const s = STUFEN[name];
     this.material.uniforms.stufen.value = s.stufen; this.material.uniforms.dither.value = s.dither;
@@ -86,10 +89,12 @@ export class Renderer {
       this.kamera.position.x += (Math.random() - .5) * s; this.kamera.position.y += (Math.random() - .5) * s;
     }
     this.material.uniforms.blitz.value *= Math.pow(0.02, dt);
+    const w = this.material.uniforms.wasser; w.value += ((this.unterwasser ? 1 : 0) - w.value) * Math.min(1, dt * 6);
     this.gl.setRenderTarget(this.ziel); this.gl.render(szene, this.kamera);
     this.gl.setRenderTarget(null); this.gl.render(this.quadSzene, this.quadKamera);
   }
   blitz(staerke = .6) { this.material.uniforms.blitz.value = staerke; }
+  setzeUnterwasser(an) { this.unterwasser = an; }
   setzeDunkel(v) { this.material.uniforms.dunkel.value = v; }
 }
 export const GRAFIK_STUFEN = Object.keys(STUFEN);

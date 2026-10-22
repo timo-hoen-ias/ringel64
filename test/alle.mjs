@@ -5,12 +5,12 @@ const mime = { '.html': 'text/html', '.js': 'text/javascript' };
 const server = http.createServer((req, res) => { let p = path.join(root, decodeURIComponent(req.url.split('?')[0])); if (p.endsWith('/')) p += 'index.html';
   fs.readFile(p, (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { 'Content-Type': mime[path.extname(p)] || 'application/octet-stream' }); res.end(d); }); }).listen(8765);
 const browser = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
-const page = await browser.newPage({ viewport: { width: 960, height: 600 } });
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 const fehler = [];
 page.on('pageerror', e => fehler.push('PAGEERROR ' + e.message + '\n' + (e.stack || '').split('\n').slice(0, 4).join('\n')));
 page.on('console', m => { if (m.type() === 'error') fehler.push('console: ' + m.text()); });
 await page.goto('http://localhost:8765/', { waitUntil: 'networkidle' });
-const levels = process.argv.slice(2).length ? process.argv.slice(2) : ['hub', 'bad', 'kuehlschrank', 'herd', 'kinderzimmer', 'bett', 'garten', 'trommel'];
+const levels = process.argv.slice(2).length ? process.argv.slice(2) : ['hub', 'bad', 'kuehlschrank', 'herd', 'kinderzimmer', 'bett', 'garten', 'aquarium', 'winter', 'trommel'];
 for (const level of levels) {
   fehler.length = 0;
   await page.evaluate((l) => { localStorage.setItem('ringel64.spielstand.v1', JSON.stringify({ level: l, klammern: 40, outfits: [0,1,2,3,4,5,6,7], outfit: 0, bosse: {}, flags: {}, gesammelt: {}, gerettet: {} })); }, level);

@@ -8,7 +8,7 @@ export const info = {
   todesHoehe: -10, spawn: [0, 0, 28], spawnYaw: Math.PI, kamera: { dist: 8 },
 };
 const KORB_POS = {};
-LEVEL_REIHENFOLGE.forEach((l, i) => { const a = (200 + i * 28) * Math.PI / 180; KORB_POS[l] = [Math.cos(a) * 20, 0, Math.sin(a) * 20 - 2]; });
+LEVEL_REIHENFOLGE.forEach((l, i) => { const a = (188 + i * 23.5) * Math.PI / 180; KORB_POS[l] = [Math.cos(a) * 23, 0, Math.sin(a) * 23 - 1]; });
 
 export function spawnVon(herkunft) {
   if (herkunft === 'trommel') return [24, 0, 16];
@@ -42,7 +42,7 @@ export function baue(welt, b) {
   // Körbe in die Level
   for (const l of LEVEL_REIHENFOLGE) {
     const p = KORB_POS[l];
-    b.portal({ x: p[0], y: 0, z: p[2], ziel: l, name: LEVELNAMEN[l], benoetigt: KLAMMERN_NOETIG[l], farbe: ['#c89b5a', '#b8d8e8', '#d89a6a', '#d86a6a', '#8a7aa8', '#8ac89a'][LEVEL_REIHENFOLGE.indexOf(l)] });
+    b.portal({ x: p[0], y: 0, z: p[2], ziel: l, name: LEVELNAMEN[l], benoetigt: KLAMMERN_NOETIG[l], farbe: ['#c89b5a', '#b8d8e8', '#d89a6a', '#d86a6a', '#8a7aa8', '#8ac89a', '#5fb7e8', '#e8eef5'][LEVEL_REIHENFOLGE.indexOf(l)] });
   }
 
   // Der Trockner (Baron von Trommel)
@@ -66,8 +66,8 @@ export function baue(welt, b) {
 
   // Sockendorf: sechs Hütten mit wartenden Socken
   LEVEL_REIHENFOLGE.forEach((l, i) => {
-    const a = (i / 6) * Math.PI * 2 + .5; const hx = Math.cos(a) * 11, hz = 8 + Math.sin(a) * 7;
-    b.box({ w: 4.5, h: 3, d: 4, x: hx, y: 0, z: hz, farbe: ['#c89b5a', '#b8d8e8', '#d89a6a', '#d86a6a', '#8a7aa8', '#8ac89a'][i], textur: Texturen.holz('#c89b5a'), wiederholung: 2 });
+    const a = (i / 8) * Math.PI * 2 + .4; const hx = Math.cos(a) * 13, hz = 8 + Math.sin(a) * 8;
+    b.box({ w: 4.5, h: 3, d: 4, x: hx, y: 0, z: hz, farbe: ['#c89b5a', '#b8d8e8', '#d89a6a', '#d86a6a', '#8a7aa8', '#8ac89a', '#5fb7e8', '#e8eef5'][i], textur: Texturen.holz('#c89b5a'), wiederholung: 2 });
     b.box({ w: 5.2, h: .4, d: 4.8, x: hx, y: 3, z: hz, farbe: '#5a4a6a' });
     b.schild({ text: LEVELNAMEN[l], x: hx, y: 3.4, z: hz, b: 4, h: 1, pfosten: false });
     const richtung = new THREE.Vector3(hx, 0, hz - 8).normalize(); // von der Dorfmitte weg
@@ -120,7 +120,7 @@ export function baue(welt, b) {
   b.fusselKreis(-34.5, 7, -24, 1.4, 4);
 
   // Flusen im Dorf
-  b.fusselKreis(0, .4, 8, 5, 8);
+  b.fusselKreis(0, .4, 8, 6, 8);
   b.fusselLinie([-10, .4, 30], [10, .4, 30], 5);
   for (const l of LEVEL_REIHENFOLGE) { const p = KORB_POS[l]; b.fussel(p[0], 2.6, p[2]); }
 
