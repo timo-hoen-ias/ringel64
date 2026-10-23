@@ -19,6 +19,7 @@ export class Eingabe {
     this.padFrisch = new Set();
     this.padAchsen = [0, 0, 0, 0];
     this.maus = { x: 0, y: 0, aktiv: false };
+    this.touch = { achse: { x: 0, y: 0 }, kamera: { x: 0, y: 0 }, gehalten: new Set(), frisch: new Set() };
     this.letzteAktivitaet = performance.now();
     this.beiErsterGeste = [];
     this.gesperrt = false;
@@ -31,7 +32,7 @@ export class Eingabe {
     window.addEventListener('keyup', e => this.gehaltenTasten.delete(e.code));
     window.addEventListener('blur', () => { this.gehaltenTasten.clear(); this.padGehalten.clear(); });
 
-    canvas.addEventListener('pointerdown', e => { this.maus.aktiv = true; canvas.setPointerCapture(e.pointerId); this.aktiv(); });
+    canvas.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') return; this.maus.aktiv = true; canvas.setPointerCapture(e.pointerId); this.aktiv(); });
     canvas.addEventListener('pointerup', () => { this.maus.aktiv = false; });
     canvas.addEventListener('pointermove', e => {
       if (!this.maus.aktiv) return;
@@ -60,15 +61,15 @@ export class Eingabe {
     if (this.padAchsen.some(a => a !== 0)) this.aktiv();
   }
 
-  frameEnde() { this.frischTasten.clear(); this.maus.x = 0; this.maus.y = 0; }
+  frameEnde() { this.frischTasten.clear(); this.touch.frisch.clear(); this.maus.x = 0; this.maus.y = 0; this.touch.kamera.x = 0; this.touch.kamera.y = 0; }
 
   gehalten(name) {
     if (this.gesperrt) return false;
-    return (BELEGUNG[name] || []).some(c => this.gehaltenTasten.has(c)) || (PAD[name] || []).some(b => this.padGehalten.has(b));
+    return (BELEGUNG[name] || []).some(c => this.gehaltenTasten.has(c)) || (PAD[name] || []).some(b => this.padGehalten.has(b)) || this.touch.gehalten.has(name);
   }
   gedrueckt(name) {
     if (this.gesperrt && name !== 'pause' && name !== 'aktion') return false;
-    return (BELEGUNG[name] || []).some(c => this.frischTasten.has(c)) || (PAD[name] || []).some(b => this.padFrisch.has(b));
+    return (BELEGUNG[name] || []).some(c => this.frischTasten.has(c)) || (PAD[name] || []).some(b => this.padFrisch.has(b)) || this.touch.frisch.has(name);
   }
 
   // Bewegungsachse (x rechts, y vor), Länge <= 1
@@ -77,6 +78,7 @@ export class Eingabe {
     let x = (this.gehalten('rechts') ? 1 : 0) - (this.gehalten('links') ? 1 : 0);
     let y = (this.gehalten('vor') ? 1 : 0) - (this.gehalten('zurueck') ? 1 : 0);
     if (x === 0 && y === 0) { x = this.padAchsen[0]; y = -this.padAchsen[1]; }
+    if (x === 0 && y === 0) { x = this.touch.achse.x; y = this.touch.achse.y; }
     const l = Math.hypot(x, y);
     if (l > 1) { x /= l; y /= l; }
     return { x, y };
@@ -86,6 +88,6 @@ export class Eingabe {
     let x = (this.gehalten('kamRechts') ? 1 : 0) - (this.gehalten('kamLinks') ? 1 : 0);
     let y = (this.gehalten('kamRunter') ? 1 : 0) - (this.gehalten('kamHoch') ? 1 : 0);
     if (x === 0 && y === 0) { x = this.padAchsen[2]; y = this.padAchsen[3]; }
-    return { x: x * 2.4 + this.maus.x * 0.012 * 60, y: y * 1.4 + this.maus.y * 0.008 * 60 };
+    return { x: x * 2.4 + (this.maus.x + this.touch.kamera.x * .8) * 0.012 * 60, y: y * 1.4 + (this.maus.y + this.touch.kamera.y * .8) * 0.008 * 60 };
   }
 }

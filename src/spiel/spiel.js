@@ -4,6 +4,7 @@ import { Audio } from '../engine/audio.js';
 import { Spielstand } from './spielstand.js';
 import { HUD, zufallsTipp } from '../ui/hud.js';
 import { Dialog } from '../ui/dialog.js';
+import { TouchSteuerung } from '../ui/touch.js';
 import { Kamera } from './kamera.js';
 import { Welt } from './welt.js';
 import { OUTFITS } from './sockenmodell.js';
@@ -20,6 +21,7 @@ export class Spiel {
     this.spielstand = new Spielstand();
     this.hud = new HUD(this);
     this.dialog = new Dialog(this);
+    this.touch = new TouchSteuerung(this);
     this.kamera = new Kamera(this.renderer.kamera);
     this.welt = null; this.zustand = 'titel'; this.wechselt = false; this.letzteZeit = performance.now();
     this.eingabe.beiErsterGeste.push(() => this.audio.start());
@@ -48,7 +50,9 @@ export class Spiel {
     const zeichneGrafik = () => { g.innerHTML = ''; for (const st of GRAFIK_STUFEN) { const el = document.createElement('div'); el.className = 'outfit' + (this.renderer.stufe === st ? ' aktiv' : ''); el.textContent = NAMEN[st];
       el.addEventListener('click', () => { this.renderer.setzeStufe(st); zeichneGrafik(); }); g.appendChild(el); }
       const sch = document.createElement('div'); sch.className = 'outfit' + (this.renderer.schatten ? ' aktiv' : ''); sch.textContent = this.renderer.schatten ? 'Schatten: an' : 'Schatten: aus';
-      sch.addEventListener('click', () => { this.renderer.setzeSchatten(!this.renderer.schatten); if (this.welt) this.welt.sonne.castShadow = this.renderer.schatten; zeichneGrafik(); }); g.appendChild(sch); };
+      sch.addEventListener('click', () => { this.renderer.setzeSchatten(!this.renderer.schatten); if (this.welt) this.welt.sonne.castShadow = this.renderer.schatten; zeichneGrafik(); }); g.appendChild(sch);
+      const to = document.createElement('div'); to.className = 'outfit' + (this.touch.aktiv ? ' aktiv' : ''); to.textContent = this.touch.aktiv ? 'Touch: an' : 'Touch: aus';
+      to.addEventListener('click', () => { this.touch.setzeAktiv(!this.touch.aktiv); zeichneGrafik(); }); g.appendChild(to); };
     zeichneGrafik();
     const ml = document.getElementById('musik-laut'), sl = document.getElementById('sfx-laut');
     const laut = () => { this.audio.setzeLautstaerke(ml.value / 100, sl.value / 100); try { localStorage.setItem('ringel64.laut', JSON.stringify([ml.value, sl.value])); } catch (e) {} };
@@ -119,6 +123,7 @@ export class Spiel {
     const jetzt = performance.now();
     let dt = Math.min(.05, (jetzt - this.letzteZeit) / 1000); this.letzteZeit = jetzt;
     this.eingabe.frameBeginn();
+    this.touch.zeige(this.zustand === 'spiel');
     if (this.zustand === 'titel') {
       if (this.eingabe.gedrueckt('aktion') || this.eingabe.gedrueckt('springen')) this.starte();
     } else if (this.zustand === 'spiel') {

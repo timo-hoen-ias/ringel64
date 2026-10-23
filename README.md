@@ -27,6 +27,10 @@ und `index.html` öffnen. three.js wird vom CDN geladen.
 | Reden / benutzen | E | Y |
 | Pause, Outfits, Grafik | Esc | Start |
 
+**Touch** (erscheint automatisch auf Touch-Geräten, im Pausemenü umschaltbar): Joystick links durch Aufsetzen und Ziehen,
+Kamera durch Wischen rechts, Tasten A (Sprung, halten = gleiten), B (Stampf, halten = abtauchen), X (Gummizug), Y (Reden), Pause oben rechts.
+Dialoge blättern durch Tippen.
+
 ## Struktur
 
 - `src/engine` – Renderer (Post-Processing), Eingabe, prozedurales Audio, Kollision, Bauer, Texturen, Partikel
