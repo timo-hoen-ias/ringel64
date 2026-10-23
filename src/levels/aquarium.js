@@ -109,7 +109,7 @@ export function baue(welt, b) {
     const bart = b.box({ w: .3, h: .9, d: .3, x: 0, y: .3, z: 0, farbe: '#ffd25a', kollision: false, eltern: g, emissive: 0x332200 }); void bart;
     b.box({ w: .9, h: .3, d: .3, x: .3, y: .3, z: 0, farbe: '#ffd25a', kollision: false, eltern: g });
     const ring = new THREE.Mesh(new THREE.TorusGeometry(.4, .1, 8, 14), material('#ffd25a', { vertexColors: false, emissive: 0x332200 })); ring.position.y = 1.5; g.add(ring);
-    const l = new THREE.PointLight(0xffd25a, .8, 6); l.position.y = 1; g.add(l);
+    const l = new THREE.PointLight(0xffd25a, 14, 7, 1.5); l.position.y = 1; g.add(l);
     welt.dinge.push({ update: dt => { g.rotation.y += dt; g.position.y = Math.sin(welt.t * 2) * .2; } });
     const stelle = welt.benutzbarStelle({ x: -26, y: 0, z: 12, radius: 2.2, text: 'E / Y: Schlüssel nehmen', aktiv: () => !st.flag(schluesselId), beiBenutzen: () => {
       st.flag(schluesselId, true); welt.scene.remove(g); welt.spiel.audio.sfx('knopf'); welt.spiel.hud.popup('Ein goldener Schlüssel! Wo ist die Truhe?'); stelle.aktiv = () => false; } });

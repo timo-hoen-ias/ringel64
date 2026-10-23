@@ -3,8 +3,8 @@ import { Texturen, material, faerbe } from '../engine/texturen.js';
 import { PAARE, KLAMMERN_NOETIG, LEVELNAMEN, LEVEL_REIHENFOLGE } from './daten.js';
 
 export const info = {
-  name: 'Waschkeller', musik: 'hub', himmel: '#2b2238', tipp: 'Jede gerettete Socke zieht ins Sockendorf. Die Körbe führen in die Level.',
-  nebel: { farbe: '#2b2238', nah: 30, fern: 90 }, licht: { himmel: 0xe4d8ff, boden: 0x4a3e5a, intensitaet: 1.25, sonne: 0xffe2b8, sonneIntensitaet: 1.2, richtung: [3, 10, 2] },
+  name: 'Waschkeller', musik: 'hub', himmel: '#3a2f4c', tipp: 'Jede gerettete Socke zieht ins Sockendorf. Die Körbe führen in die Level.',
+  nebel: { farbe: '#3a2f4c', nah: 40, fern: 110 }, licht: { himmel: 0xfff4e4, boden: 0x5a4e6a, intensitaet: 1.3, sonne: 0xfff0d8, sonneIntensitaet: 1.0, richtung: [3, 10, 2] },
   todesHoehe: -10, spawn: [0, 0, 28], spawnYaw: Math.PI, kamera: { dist: 8 },
 };
 const KORB_POS = {};
@@ -31,12 +31,15 @@ const JUBEL_SPRUECHE = [
 export function baue(welt, b) {
   const st = welt.spiel.spielstand;
   // Boden, Wände, Decke
-  b.box({ w: 84, h: 1, d: 84, x: 0, y: -1, z: 0, farbe: '#8a8a94', textur: Texturen.karo('#8c8c96', '#7a7a84'), wiederholung: 24 });
+  b.box({ w: 84, h: 1, d: 84, x: 0, y: -1, z: 0, farbe: '#a4a4ae', textur: Texturen.karo('#aaaab4', '#9696a0'), wiederholung: 24 });
   for (const [x, z, w, d] of [[0, -42, 84, 1], [0, 42, 84, 1], [-42, 0, 1, 84], [42, 0, 1, 84]])
-    b.box({ w, h: 18, d, x, y: 0, z, farbe: '#6d6478', textur: Texturen.rauschen('#6d6478', .08), wiederholung: 10 });
-  b.box({ w: 84, h: 1, d: 84, x: 0, y: 18, z: 0, farbe: '#2a2233', kollision: false });
-  for (const [x, z] of [[-20, -10], [20, -10], [0, 12], [-20, 25], [20, 25], [30, 10]]) { b.lampe(x, 12, z, 0xffd9a0, 1.4, 30);
-    b.zylinder({ r: .08, h: 5, x, y: 13, z, farbe: '#333', kollision: false }); b.kugel({ r: .5, x, y: 12.2, z, farbe: '#fff2c0', kollision: false, emissive: 0x886633 }); }
+    b.box({ w, h: 18, d, x, y: 0, z, farbe: '#8e8299', textur: Texturen.rauschen('#8e8299', .08), wiederholung: 10 });
+  b.box({ w: 84, h: 1, d: 84, x: 0, y: 18, z: 0, farbe: '#5a5068', kollision: false });
+  // Neonröhren an der Decke in drei Reihen, dazu zwei warme Hängelampen über dem Dorf
+  for (const x of [-26, 0, 26]) for (const z of [-26, -2, 22]) b.deckenlicht({ x, y: 17.3, z, laenge: 10, intensitaet: 3.2, reichweite: 46 });
+  for (const [x, z] of [[-8, 8], [8, 8]]) { b.lampe(x, 9, z, 0xffd9a0, 1.6, 26);
+    b.zylinder({ r: .08, h: 8.5, x, y: 9.5, z, farbe: '#333', kollision: false }); b.zylinder({ r: 1.4, rOben: .6, h: 1.2, x, y: 9, z, farbe: '#e8474c', kollision: false, seg: 14 });
+    b.kugel({ r: .4, x, y: 8.8, z, farbe: '#fff2c0', kollision: false, emissive: 0xaa8844 }); }
   b.schild({ text: 'Sockendorf\nWaschkeller', x: 0, y: 0, z: 24, b: 5, h: 1.6 });
 
   // Körbe in die Level

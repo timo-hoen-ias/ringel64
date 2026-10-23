@@ -16,10 +16,10 @@ export class Welt {
     this.scene.background = new THREE.Color(info.himmel || '#87b7e8');
     if (info.nebel) this.scene.fog = new THREE.Fog(info.nebel.farbe || info.himmel || '#87b7e8', info.nebel.nah ?? 20, info.nebel.fern ?? 70);
     const l = info.licht || {};
-    this.scene.add(new THREE.HemisphereLight(l.himmel || 0xffffff, l.boden || 0x6a6a7a, (l.intensitaet ?? 1.0) * .9));
-    this.scene.add(new THREE.AmbientLight(0xffffff, .12));
+    this.scene.add(new THREE.HemisphereLight(l.himmel || 0xffffff, l.boden || 0x6a6a7a, (l.intensitaet ?? 1.0) * 1.25));
+    this.scene.add(new THREE.AmbientLight(0xffffff, .28));
     // Sonne mit Schatten, folgt dem Spieler
-    const sonne = new THREE.DirectionalLight(l.sonne || 0xfff1d6, (l.sonneIntensitaet ?? 1.4) * 1.1);
+    const sonne = new THREE.DirectionalLight(l.sonne || 0xfff1d6, (l.sonneIntensitaet ?? 1.4) * 1.3);
     this.sonnenRichtung = new THREE.Vector3(...(l.richtung || [5, 10, 4])).normalize();
     sonne.castShadow = spiel.renderer.schatten; sonne.shadow.mapSize.set(2048, 2048);
     const sk = sonne.shadow.camera; sk.left = -42; sk.right = 42; sk.top = 42; sk.bottom = -42; sk.near = 1; sk.far = 160;

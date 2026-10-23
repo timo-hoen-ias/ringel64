@@ -134,7 +134,7 @@ export function aktiviereSchatten(obj) {
 }
 
 // Vertexfarben: Grundfarbe, oben heller, unten dunkler, leichte Flächenvariation.
-export function faerbe(geometrie, farbe, { variation = .04, verlauf = .22 } = {}) {
+export function faerbe(geometrie, farbe, { variation = .04, verlauf = .14 } = {}) {
   const basis = new THREE.Color(farbe);
   const pos = geometrie.attributes.position; const n = pos.count;
   geometrie.computeBoundingBox();
@@ -144,8 +144,8 @@ export function faerbe(geometrie, farbe, { variation = .04, verlauf = .22 } = {}
   const c = new THREE.Color();
   for (let i = 0; i < n; i++) {
     const t = (pos.getY(i) - bb.min.y) / h;
-    let k = 1 - verlauf / 2 + verlauf * t;
-    if (normal) { const ny = normal.getY(i); k *= .94 + .1 * Math.max(0, ny); }
+    let k = 1.02 - verlauf / 2 + verlauf * t;
+    if (normal) { const ny = normal.getY(i); k *= .96 + .08 * Math.max(0, ny); }
     k += (Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1) * variation - variation / 2;
     c.copy(basis).multiplyScalar(k);
     farben[i * 3] = c.r; farben[i * 3 + 1] = c.g; farben[i * 3 + 2] = c.b;

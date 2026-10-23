@@ -41,7 +41,7 @@ export class Klammer extends Sammelobjekt {
     }
     const feder = new THREE.Mesh(new THREE.TorusGeometry(.2, .06, 6, 10), material('#c0c0c0', { vertexColors: false }));
     feder.position.set(0, .75, 0); feder.rotation.y = Math.PI / 2; this.gruppe.add(feder);
-    const licht = new THREE.PointLight(0xffd25a, .6, 5); licht.position.y = .8; this.gruppe.add(licht);
+    const licht = new THREE.PointLight(0xffd25a, 10, 6, 1.5); licht.position.y = .8; this.gruppe.add(licht);
   }
   animiere(dt) { this.gruppe.rotation.y += dt * 2; this.gruppe.position.y = this.pos.y + Math.sin(this.t * 2) * .2; }
   einsammeln() {

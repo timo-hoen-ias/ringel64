@@ -72,8 +72,16 @@ export class Bauer {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(b, h), new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
     m.position.set(x, y + (pfosten ? 1.2 + h / 2 : h / 2), z); m.rotation.y = ry; this.scene.add(m); return m;
   }
+  // Punktlicht; intensitaet ist eine Spielgröße (1 ≈ Glühbirne), intern in Candela umgerechnet
   lampe(x, y, z, farbe = 0xffd9a0, intensitaet = 1.2, reichweite = 14) {
-    const l = new THREE.PointLight(farbe, intensitaet, reichweite, 1.2); l.position.set(x, y, z); this.scene.add(l); return l;
+    const l = new THREE.PointLight(farbe, intensitaet * 36, reichweite, 1.5); l.position.set(x, y, z); this.scene.add(l); return l;
+  }
+  // Deckenleuchte: Neonröhre (leuchtender Balken) mit kräftigem, weitem Licht darunter
+  deckenlicht({ x, y, z, laenge = 8, farbe = '#fff6dc', intensitaet = 3, reichweite = 48, ry = 0 }) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(laenge, .35, .7), new THREE.MeshBasicMaterial({ color: farbe })); r.position.set(x, y, z); r.rotation.y = ry; r.userData.keinSchatten = true; this.scene.add(r);
+    const h = new THREE.Mesh(faerbe(new THREE.BoxGeometry(laenge + .6, .5, 1.2), '#9a9aa8'), material('#9a9aa8')); h.position.set(x, y + .4, z); h.rotation.y = ry; h.userData.keinSchatten = true; this.scene.add(h);
+    const g = new THREE.Sprite(new THREE.SpriteMaterial({ color: farbe, transparent: true, opacity: .18, depthWrite: false })); g.scale.set(laenge * 1.4, 4, 1); g.position.set(x, y - .6, z); this.scene.add(g);
+    return this.lampe(x, y - 1, z, farbe, intensitaet, reichweite);
   }
 
   // ---- Bewegung ----

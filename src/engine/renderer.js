@@ -6,7 +6,7 @@ import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/
 const VERTEX = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
 const FRAGMENT = `
   uniform sampler2D tBild; uniform vec2 aufloesung; uniform float blitz; uniform float dunkel;
-  uniform float stufen; uniform float dither; uniform float vignette; uniform float saettigung; uniform float wasser;
+  uniform float stufen; uniform float dither; uniform float vignette; uniform float saettigung; uniform float wasser; uniform float helligkeit;
   varying vec2 vUv;
   float bayer(vec2 p){
     int x = int(mod(p.x, 4.0)); int y = int(mod(p.y, 4.0));
@@ -21,6 +21,7 @@ const FRAGMENT = `
     c = pow(max(c, 0.0), vec3(1.0 / 2.2));
     float grau = dot(c, vec3(0.299, 0.587, 0.114));
     c = mix(vec3(grau), c, saettigung);
+    c = clamp((c - 0.5) * 1.04 + 0.5, 0.0, 1.0) * helligkeit;
     if (stufen > 0.0) {
       float d = (bayer(vUv * aufloesung) - 0.5) / stufen * dither;
       c = floor((c + d) * stufen + 0.5) / stufen;
@@ -34,9 +35,9 @@ const FRAGMENT = `
   }`;
 
 const STUFEN = {
-  retro: { breite: 320, samples: 0, stufen: 31, dither: 1, vignette: .35, filter: THREE.NearestFilter, saettigung: 1.0 },
-  weich: { skala: .5, min: 640, samples: 4, stufen: 63, dither: .6, vignette: .5, filter: THREE.LinearFilter, saettigung: 1.08 },
-  hoch: { skala: 1, min: 960, samples: 4, stufen: 0, dither: 0, vignette: .45, filter: THREE.LinearFilter, saettigung: 1.08 },
+  retro: { breite: 320, samples: 0, stufen: 31, dither: 1, vignette: .35, filter: THREE.NearestFilter, saettigung: 1.05, helligkeit: 1.02 },
+  weich: { skala: .5, min: 640, samples: 4, stufen: 63, dither: .6, vignette: .4, filter: THREE.LinearFilter, saettigung: 1.22, helligkeit: 1.06 },
+  hoch: { skala: 1, min: 960, samples: 4, stufen: 0, dither: 0, vignette: .4, filter: THREE.LinearFilter, saettigung: 1.22, helligkeit: 1.06 },
 };
 
 export class Renderer {
@@ -48,7 +49,7 @@ export class Renderer {
     this.gl.shadowMap.type = THREE.PCFSoftShadowMap;
     this.material = new THREE.ShaderMaterial({
       uniforms: { tBild: { value: null }, aufloesung: { value: new THREE.Vector2(320, 240) }, blitz: { value: 0 }, dunkel: { value: 0 },
-        stufen: { value: 0 }, dither: { value: 0 }, vignette: { value: .4 }, saettigung: { value: 1 }, wasser: { value: 0 } },
+        stufen: { value: 0 }, dither: { value: 0 }, vignette: { value: .4 }, saettigung: { value: 1 }, wasser: { value: 0 }, helligkeit: { value: 1 } },
       vertexShader: VERTEX, fragmentShader: FRAGMENT, depthTest: false, depthWrite: false,
     });
     this.quadSzene = new THREE.Scene();
@@ -66,7 +67,7 @@ export class Renderer {
   setzeStufe(name) {
     this.stufe = name; const s = STUFEN[name];
     this.material.uniforms.stufen.value = s.stufen; this.material.uniforms.dither.value = s.dither;
-    this.material.uniforms.vignette.value = s.vignette; this.material.uniforms.saettigung.value = s.saettigung;
+    this.material.uniforms.vignette.value = s.vignette; this.material.uniforms.saettigung.value = s.saettigung; this.material.uniforms.helligkeit.value = s.helligkeit;
     try { localStorage.setItem('ringel64.grafik', name); } catch (e) { /* egal */ }
     this.groesse();
   }

@@ -31,7 +31,7 @@ export function baue(welt, b) {
     r.rotation.y = -t; r.userData.kollider.aktualisiere(); }
   // Flusensieb (Schwachstelle) an der Wand
   const sieb = b.box({ w: 1.2, h: 3.2, d: 3.2, x: 0, y: 0, z: 0, farbe: '#e8474c', emissive: 0x551010, eltern: trommel, mitte: true });
-  const siebLicht = new THREE.PointLight(0xff3030, 1.2, 8); sieb.add(siebLicht);
+  const siebLicht = new THREE.PointLight(0xff3030, 24, 9, 1.5); sieb.add(siebLicht);
   const setzeSieb = (t) => { sieb.position.set(Math.cos(t) * (R - .6), 0, Math.sin(t) * (R - .6)); sieb.rotation.y = -t; sieb.userData.kollider.aktualisiere(); };
   setzeSieb(Math.PI * 1.1);
   // Wände vorn und hinten (statisch), Baron-Gesicht hinten, Tür vorn

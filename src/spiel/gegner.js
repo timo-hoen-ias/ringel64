@@ -144,7 +144,7 @@ class Flamme extends Gegner {
     const f = new THREE.Mesh(faerbe(new THREE.ConeGeometry(.45, 1.1, 7), '#ff8c3a', { verlauf: -.5 }), material('#ff8c3a', { emissive: 0x661a00 })); f.position.y = .55; this.gruppe.add(f); this.f = f;
     const k = new THREE.Mesh(faerbe(new THREE.ConeGeometry(.25, .7, 6), '#ffe04a'), material('#ffe04a', { emissive: 0x553300 })); k.position.y = .45; this.gruppe.add(k);
     for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.SphereGeometry(.07, 6, 5), new THREE.MeshBasicMaterial({ color: 0x2a1a2e })); a.position.set(s * .13, .55, .35); this.gruppe.add(a); }
-    const l = new THREE.PointLight(0xff8c3a, .8, 5); l.position.y = .8; this.gruppe.add(l);
+    const l = new THREE.PointLight(0xff8c3a, 14, 6, 1.5); l.position.y = .8; this.gruppe.add(l);
   }
   verhalten(dt) { this.patrouille(dt, 2.8); this.gruppe.position.y = this.bodenY + Math.abs(Math.sin(this.t * 7)) * .5; this.f.scale.y = 1 + Math.sin(this.t * 20) * .12;
     if (Math.random() < dt * 6) this.welt.partikel.spawn(this.gruppe.position, { anzahl: 1, farbe: [0xff8c3a, 0xffe04a], geschwindigkeit: 1.5, leben: .5, gravitation: 3, groesse: .1 }); }

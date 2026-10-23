@@ -28,9 +28,9 @@ export function baue(welt, b) {
   // ---- Taschenlampe ----
   const lampeHolen = (leise = false) => {
     const sp = welt.spieler;
-    const spot = new THREE.SpotLight(0xfff2c0, 4, 30, .55, .5, .8); spot.position.set(0, 1.2, .3);
+    const spot = new THREE.SpotLight(0xfff2c0, 260, 32, .55, .5, 1.2); spot.position.set(0, 1.2, .3);
     const ziel = new THREE.Object3D(); ziel.position.set(0, 0, 8); sp.gruppe.add(ziel); spot.target = ziel; sp.gruppe.add(spot);
-    const punkt = new THREE.PointLight(0xfff2c0, .7, 8); punkt.position.set(0, 1, 0); sp.gruppe.add(punkt);
+    const punkt = new THREE.PointLight(0xfff2c0, 20, 9, 1.5); punkt.position.set(0, 1, 0); sp.gruppe.add(punkt);
     const lampe = new THREE.Mesh(faerbe(new THREE.CylinderGeometry(.12, .16, .6, 8), '#c0c8d0'), material('#c0c8d0')); lampe.rotation.x = Math.PI / 2; lampe.position.set(.3, .9, .3); sp.modell.bein.add(lampe);
     welt.scene.fog.near = 8; welt.scene.fog.far = 30;
     if (!leise) { welt.spiel.audio.sfx('schalter'); welt.spiel.hud.popup('Taschenlampe! Es werde Licht.'); }
